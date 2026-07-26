@@ -26,6 +26,7 @@ interface CommandState {
 }
 
 const HISTORY_LIMIT = 100
+const EMPTY_HISTORY: HistoryEntry[] = []
 
 const useCommandStore = create<CommandState>(() => ({
   histories: {},
@@ -138,14 +139,19 @@ export function clearCommandHistory(scope: string) {
 }
 
 export function useCommandHistory(scope: string) {
-  return useCommandStore((state) => {
-    const history = historyFor(state, scope)
-    return {
-      canUndo: history.undo.length > 0,
-      canRedo: history.redo.length > 0,
-      undoLabel: history.undo.at(-1)?.label,
-      redoLabel: history.redo.at(-1)?.label,
-      busy: state.busyScopes[scope] ?? false,
-    }
-  })
+  const undo = useCommandStore(
+    (state) => state.histories[scope]?.undo ?? EMPTY_HISTORY,
+  )
+  const redo = useCommandStore(
+    (state) => state.histories[scope]?.redo ?? EMPTY_HISTORY,
+  )
+  const busy = useCommandStore((state) => state.busyScopes[scope] ?? false)
+
+  return {
+    canUndo: undo.length > 0,
+    canRedo: redo.length > 0,
+    undoLabel: undo.at(-1)?.label,
+    redoLabel: redo.at(-1)?.label,
+    busy,
+  }
 }

@@ -19,5 +19,9 @@ export function useLayers(floorId: string | undefined) {
 
 export function useFeatures(layerIds: readonly string[]) {
   const key = layerIds.join("\0")
-  return useLiveQuery(() => editor.listFeatures(layerIds), [key], undefined)
+  return useLiveQuery(
+    () => editor.listFeatures(key ? key.split("\0") : []),
+    [key],
+    undefined,
+  )
 }
