@@ -1,0 +1,156 @@
+import {
+  type FloorRepository,
+  type FloorSnapshot,
+  floors,
+  type SetBasemapInput,
+} from "@/db/floor-repository"
+import type { Floor } from "@/domain/models"
+import type { Command } from "@/store/command-store"
+
+export class CreateFloorCommand implements Command {
+  readonly label = "创建楼层"
+
+  constructor(
+    private readonly projectId: string,
+    private readonly name: string,
+    private readonly repository: FloorRepository = floors,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const floor = await this.repository.create({
+      projectId: this.projectId,
+      name: this.name,
+    })
+    return new DeleteFloorCommand(floor.id, this.repository)
+  }
+}
+
+export class RenameFloorCommand implements Command {
+  readonly label = "重命名楼层"
+
+  constructor(
+    private readonly floorId: string,
+    private readonly name: string,
+    private readonly repository: FloorRepository = floors,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const before = await this.repository.get(this.floorId)
+    if (!before) throw new Error(`Floor not found: ${this.floorId}`)
+    await this.repository.rename(this.floorId, this.name)
+    return new RestoreFloorRecordCommand(before, this.repository)
+  }
+}
+
+class RestoreFloorRecordCommand implements Command {
+  readonly label = "恢复楼层信息"
+
+  constructor(
+    private readonly record: Floor,
+    private readonly repository: FloorRepository,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const current = await this.repository.get(this.record.id)
+    if (!current) throw new Error(`Floor not found: ${this.record.id}`)
+    await this.repository.put(this.record)
+    return new RestoreFloorRecordCommand(current, this.repository)
+  }
+}
+
+export class ReorderFloorsCommand implements Command {
+  readonly label = "调整楼层顺序"
+
+  constructor(
+    private readonly projectId: string,
+    private readonly orderedIds: readonly string[],
+    private readonly repository: FloorRepository = floors,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const before = (await this.repository.list(this.projectId)).map(
+      (floor) => floor.id,
+    )
+    await this.repository.reorder(this.projectId, this.orderedIds)
+    return new ReorderFloorsCommand(this.projectId, before, this.repository)
+  }
+}
+
+export class DeleteFloorCommand implements Command {
+  readonly label = "删除楼层"
+
+  constructor(
+    private readonly floorId: string,
+    private readonly repository: FloorRepository = floors,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const snapshot = await this.repository.snapshot(this.floorId)
+    await this.repository.delete(this.floorId)
+    return new RestoreFloorCommand(snapshot, this.repository)
+  }
+}
+
+class RestoreFloorCommand implements Command {
+  readonly label = "恢复楼层"
+
+  constructor(
+    private readonly snapshot: FloorSnapshot,
+    private readonly repository: FloorRepository,
+  ) {}
+
+  async execute(): Promise<Command> {
+    await this.repository.restore(this.snapshot)
+    return new DeleteFloorCommand(this.snapshot.floor.id, this.repository)
+  }
+}
+
+export class SetBasemapCommand implements Command {
+  readonly label = "设置底图"
+
+  constructor(
+    private readonly input: SetBasemapInput,
+    private readonly repository: FloorRepository = floors,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const before = await this.repository.get(this.input.floorId)
+    if (!before) throw new Error(`Floor not found: ${this.input.floorId}`)
+    const { previousAsset } = await this.repository.setBasemap(this.input)
+    return previousAsset
+      ? new SetBasemapCommand(
+          {
+            floorId: before.id,
+            fileName: previousAsset.fileName,
+            mime: previousAsset.mime,
+            size: previousAsset.size,
+            blob: previousAsset.blob,
+          },
+          this.repository,
+        )
+      : new RemoveBasemapCommand(before.id, this.repository)
+  }
+}
+
+class RemoveBasemapCommand implements Command {
+  readonly label = "移除底图"
+
+  constructor(
+    private readonly floorId: string,
+    private readonly repository: FloorRepository,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const asset = await this.repository.removeBasemap(this.floorId)
+    return new SetBasemapCommand(
+      {
+        floorId: this.floorId,
+        fileName: asset.fileName,
+        mime: asset.mime,
+        size: asset.size,
+        blob: asset.blob,
+      },
+      this.repository,
+    )
+  }
+}
