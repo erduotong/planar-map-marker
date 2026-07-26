@@ -2,6 +2,7 @@ import { ArrowLeft, FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
+import { EditorWorkspace } from "@/components/editor/editor-workspace"
 import { BasemapUpload } from "@/components/floors/basemap-upload"
 import { FloorDialog } from "@/components/floors/floor-dialog"
 import { FloorSidebar } from "@/components/floors/floor-sidebar"
@@ -31,7 +32,6 @@ import { BASEMAP_ACCEPT, inspectImage } from "@/domain/basemap"
 import type { AssetMime, Floor } from "@/domain/models"
 import { useBasemapAsset, useFloors } from "@/hooks/use-floors"
 import { useProject } from "@/hooks/use-projects"
-import { BasemapView } from "@/map/basemap-view"
 import { dispatchCommand } from "@/store/command-store"
 import {
   CreateFloorCommand,
@@ -211,7 +211,7 @@ export function ProjectPage() {
               </EmptyHeader>
             </Empty>
           ) : selectedFloor.basemap ? (
-            <SelectedBasemap floor={selectedFloor} />
+            <SelectedBasemap floor={selectedFloor} projectId={validProjectId} />
           ) : (
             <BasemapUpload
               floor={selectedFloor}
@@ -299,7 +299,13 @@ export function ProjectPage() {
   )
 }
 
-function SelectedBasemap({ floor }: { floor: Floor }) {
+function SelectedBasemap({
+  floor,
+  projectId,
+}: {
+  floor: Floor
+  projectId: string
+}) {
   const asset = useBasemapAsset(floor.basemap?.assetId)
   if (asset === undefined) return <ProjectSkeleton />
   if (!asset) {
@@ -311,7 +317,9 @@ function SelectedBasemap({ floor }: { floor: Floor }) {
       </Empty>
     )
   }
-  return <BasemapView asset={asset} />
+  return (
+    <EditorWorkspace projectId={projectId} floorId={floor.id} asset={asset} />
+  )
 }
 
 interface HiddenBasemapUploadProps {
