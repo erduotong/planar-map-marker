@@ -23,7 +23,6 @@ import type {
   ConstraintField,
   Feature,
   Layer,
-  Properties,
 } from "@/domain/models"
 import { cn } from "@/lib/utils"
 
@@ -33,7 +32,7 @@ interface FeatureTableProps {
   constraint: Constraint | null
   selectedFeatureId: string | null
   onSelect: (feature: Feature) => void
-  onUpdate: (feature: Feature, properties: Properties) => Promise<boolean>
+  onUpdate: (feature: Feature, key: string, value: unknown) => Promise<boolean>
   onDelete: (feature: Feature) => void
 }
 
@@ -96,13 +95,9 @@ export function FeatureTable({
                       <PropertyCell
                         field={field}
                         value={feature.properties[field.key]}
-                        onCommit={async (value) => {
-                          const success = await onUpdate(feature, {
-                            ...feature.properties,
-                            [field.key]: value,
-                          })
-                          return success
-                        }}
+                        onCommit={(value) =>
+                          onUpdate(feature, field.key, value)
+                        }
                       />
                     </TableCell>
                   ))}

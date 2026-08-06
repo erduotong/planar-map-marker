@@ -20,17 +20,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  compileConstraint,
-  initialProperties,
-} from "@/domain/constraint-compiler"
+import { initialProperties } from "@/domain/constraint-compiler"
 import type {
   Asset,
   Constraint,
   Feature,
   Geometry,
   LayerKind,
-  Properties,
 } from "@/domain/models"
 import { useConstraints, useFeatures, useLayers } from "@/hooks/use-editor-data"
 import { usePersistedState } from "@/lib/use-persisted-state"
@@ -241,27 +237,21 @@ export function EditorWorkspace({
     setFocusRequest({ featureId: feature.id, token: Date.now() })
   }
 
-  async function updateFeatureProperties(
+  /**
+   * Cell-level save from the data table: only the edited field is written, so
+   * required fields can be filled in one at a time. Whole-record validation is
+   * the job of the properties panel and the export pre-flight check.
+   */
+  async function updateFeatureField(
     feature: Feature,
-    properties: Properties,
+    key: string,
+    value: unknown,
   ): Promise<boolean> {
-    const layer = layers.find((candidate) => candidate.id === feature.layerId)
-    const constraintId =
-      layer?.kind === "route" ? layer?.nodeConstraintId : layer?.constraintId
-    const constraint =
-      constraints.find((candidate) => candidate.id === constraintId) ?? null
-    if (constraint) {
-      const result = compileConstraint(constraint).safeParse(properties)
-      if (!result.success) {
-        toast.error(result.error.issues[0]?.message ?? "属性校验失败")
-        return false
-      }
-    }
     try {
       await run(
         new PutFeatureCommand({
           ...feature,
-          properties,
+          properties: { ...feature.properties, [key]: value },
           updatedAt: Date.now(),
         }),
       )
@@ -446,7 +436,7 @@ export function EditorWorkspace({
                 constraint={selectedConstraint}
                 selectedFeatureId={selectedFeatureId}
                 onSelect={selectAndFocus}
-                onUpdate={updateFeatureProperties}
+                onUpdate={updateFeatureField}
                 onDelete={deleteFeature}
               />
             ) : (
