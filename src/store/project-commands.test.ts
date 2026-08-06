@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { MapPointerDatabase } from "@/db/database"
 import { ProjectRepository } from "@/db/project-repository"
+import { makeSnapshot } from "@/domain/export/fixtures"
+import { serializeSnapshot } from "@/domain/export/snapshot-io"
 import {
   CreateProjectCommand,
   DeleteProjectCommand,
+  ImportProjectCommand,
   UpdateProjectCommand,
 } from "@/store/project-commands"
 
@@ -74,5 +77,36 @@ describe("project commands", () => {
 
     await inverse.execute()
     expect((await database.floors.get("f1"))?.name).toBe("1F")
+  })
+
+  it("import creates a full project and its inverse deletes it", async () => {
+    const data = serializeSnapshot(makeSnapshot())
+    const assetBlobs = new Map<string, Blob>()
+    for (const asset of data.assets) {
+      assetBlobs.set(
+        asset.dataPath,
+        new Blob([new Uint8Array([1, 2, 3])], { type: asset.mime }),
+      )
+    }
+
+    const inverse = await new ImportProjectCommand(
+      data,
+      assetBlobs,
+      repository,
+    ).execute()
+
+    const [imported] = await repository.list()
+    expect(imported?.name).toBe("示例项目")
+    expect(imported?.id).not.toBe("project-1")
+    expect(imported?.lastExportedAt).toBeNull()
+    expect(await database.floors.count()).toBe(2)
+    expect(await database.layers.count()).toBe(4)
+    expect(await database.features.count()).toBe(3)
+    expect(await database.routeNodes.count()).toBe(2)
+    expect(await database.routeEdges.count()).toBe(2)
+
+    await inverse.execute()
+    expect(await repository.list()).toEqual([])
+    expect(await database.features.count()).toBe(0)
   })
 })

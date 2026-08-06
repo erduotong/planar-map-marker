@@ -95,4 +95,15 @@ describe("ProjectRepository", () => {
       first.id,
     ])
   })
+
+  it("markExported stamps the backup badge timestamp", async () => {
+    const project = await repository.create({ name: "备份" })
+    expect((await repository.get(project.id))?.lastExportedAt).toBeNull()
+
+    await repository.markExported(project.id)
+
+    const updated = await repository.get(project.id)
+    expect(updated?.lastExportedAt).not.toBeNull()
+    expect(updated?.updatedAt).toBe(updated?.lastExportedAt)
+  })
 })

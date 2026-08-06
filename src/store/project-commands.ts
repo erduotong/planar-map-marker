@@ -5,6 +5,10 @@ import {
   projects,
   type UpdateProjectInput,
 } from "@/db/project-repository"
+import {
+  type ArchiveProjectData,
+  rebuildSnapshot,
+} from "@/domain/export/snapshot-io"
 import type { Project } from "@/domain/models"
 import type { Command } from "@/store/command-store"
 
@@ -67,6 +71,27 @@ export class DeleteProjectCommand implements Command {
     const snapshot = await this.repository.snapshot(this.projectId)
     await this.repository.delete(this.projectId)
     return new RestoreProjectCommand(snapshot, this.repository)
+  }
+}
+
+/**
+ * Imports a parsed package as a brand-new project. The caller has already
+ * validated the payload; executing here re-assigns the project id and writes
+ * everything in one transaction. Undo deletes the imported project.
+ */
+export class ImportProjectCommand implements Command {
+  readonly label = "导入项目"
+
+  constructor(
+    private readonly data: ArchiveProjectData,
+    private readonly assetBlobs: ReadonlyMap<string, Blob>,
+    private readonly repository: ProjectRepository = projects,
+  ) {}
+
+  async execute(): Promise<Command> {
+    const snapshot = rebuildSnapshot(this.data, this.assetBlobs)
+    await this.repository.restore(snapshot)
+    return new DeleteProjectCommand(snapshot.project.id, this.repository)
   }
 }
 

@@ -1,6 +1,7 @@
-import { Plus, Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { Plus, Search, Upload } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { ImportDialog } from "@/components/projects/import-dialog"
 import { ProjectCard } from "@/components/projects/project-card"
 import {
   ProjectDialog,
@@ -27,12 +28,15 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { ParsedPackage } from "@/domain/export/archive"
+import { parseProjectPackage } from "@/domain/export/archive"
 import type { Project } from "@/domain/models"
 import { useProjects } from "@/hooks/use-projects"
 import { dispatchCommand } from "@/store/command-store"
 import {
   CreateProjectCommand,
   DeleteProjectCommand,
+  ImportProjectCommand,
   UpdateProjectCommand,
 } from "@/store/project-commands"
 
@@ -45,6 +49,9 @@ export function ProjectsPage() {
   const [selected, setSelected] = useState<Project | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null)
   const [pending, setPending] = useState(false)
+  const [importFile, setImportFile] = useState<ParsedPackage | null>(null)
+  const [importPending, setImportPending] = useState(false)
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   const filtered = useMemo(() => {
     if (!projects) return undefined
@@ -102,6 +109,37 @@ export function ProjectsPage() {
     }
   }
 
+  async function handleImportFile(file: File | undefined) {
+    if (!file) return
+    try {
+      const parsed = await parseProjectPackage(file)
+      setImportFile(parsed)
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : "无法解析项目包")
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = ""
+    }
+  }
+
+  async function confirmImport() {
+    if (!importFile) return
+    setImportPending(true)
+    try {
+      await dispatchCommand(
+        PROJECT_LIST_SCOPE,
+        new ImportProjectCommand(importFile.data, importFile.assetBlobs),
+      )
+      toast.success(`已导入项目「${importFile.manifest.projectName}」`)
+      setImportFile(null)
+    } catch (error) {
+      console.error(error)
+      toast.error("导入失败，请重试")
+    } finally {
+      setImportPending(false)
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-7xl px-5 py-6 lg:px-8">
@@ -123,6 +161,13 @@ export function ProjectsPage() {
                 aria-label="搜索项目"
               />
             </div>
+            <Button
+              variant="outline"
+              onClick={() => importInputRef.current?.click()}
+            >
+              <Upload />
+              导入项目
+            </Button>
             <Button onClick={openCreate}>
               <Plus />
               新建项目
@@ -216,6 +261,22 @@ export function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <input
+        ref={importInputRef}
+        type="file"
+        className="sr-only"
+        accept=".mappkg,.zip,application/zip,application/x-zip-compressed"
+        onChange={(event) => handleImportFile(event.target.files?.[0])}
+      />
+      <ImportDialog
+        parsed={importFile}
+        pending={importPending}
+        onConfirm={confirmImport}
+        onOpenChange={(open) => {
+          if (!open && !importPending) setImportFile(null)
+        }}
+      />
     </div>
   )
 }

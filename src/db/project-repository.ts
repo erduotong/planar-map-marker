@@ -67,6 +67,20 @@ export class ProjectRepository {
     await this.database.projects.put(project)
   }
 
+  /**
+   * Stamps the export time that drives the "已备份" badge. This is metadata,
+   * not an undoable edit, so it deliberately bypasses the command store.
+   */
+  async markExported(projectId: string): Promise<void> {
+    const record = await this.require(projectId)
+    const now = Date.now()
+    await this.database.projects.put({
+      ...record,
+      lastExportedAt: now,
+      updatedAt: now,
+    })
+  }
+
   async delete(projectId: string): Promise<void> {
     await this.database.transaction(
       "rw",

@@ -1,4 +1,11 @@
-import { ArrowLeft, FolderOpen, Pencil, Plus, Trash2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Download,
+  FolderOpen,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
@@ -6,6 +13,7 @@ import { EditorWorkspace } from "@/components/editor/editor-workspace"
 import { BasemapUpload } from "@/components/floors/basemap-upload"
 import { FloorDialog } from "@/components/floors/floor-dialog"
 import { FloorSidebar } from "@/components/floors/floor-sidebar"
+import { ExportDialog } from "@/components/projects/export-dialog"
 import {
   ProjectDialog,
   type ProjectFormValues,
@@ -56,6 +64,7 @@ export function ProjectPage() {
   >(null)
   const [deleteTarget, setDeleteTarget] = useState<Floor | null>(null)
   const [pending, setPending] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const hiddenUploadRef = useRef<HTMLInputElement>(null)
   const [uploadTarget, setUploadTarget] = useState<Floor | null>(null)
   const [floorWidth, setFloorWidth] = usePersistedState(
@@ -177,6 +186,21 @@ export function ProjectPage() {
           <TooltipTrigger
             render={
               <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="导出项目"
+                onClick={() => setExportOpen(true)}
+              >
+                <Download />
+              </Button>
+            }
+          />
+          <TooltipContent>导出项目数据</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
                 className="ml-auto"
                 variant="ghost"
                 size="icon-sm"
@@ -257,6 +281,11 @@ export function ProjectPage() {
         />
       )}
 
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        projectId={validProjectId}
+      />
       <ProjectDialog
         open={editingProject}
         mode="edit"
