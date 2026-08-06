@@ -325,7 +325,7 @@ export function ProjectPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>删除“{deleteTarget?.name}”？</AlertDialogTitle>
             <AlertDialogDescription>
-              该楼层的底图、全部图层和标注都会被删除。此操作可通过后续的撤销功能恢复。
+              该楼层的底图、全部图层和标注都会被删除。该操作不可撤销
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
