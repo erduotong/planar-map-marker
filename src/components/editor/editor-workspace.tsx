@@ -164,6 +164,16 @@ export function EditorWorkspace({
     )
   }, [layers])
 
+  // Switching the active layer (including a floor change) invalidates an
+  // in-progress edge: its source node may belong to the previous layer.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally triggers only on layer change.
+  useEffect(() => {
+    setPendingEdge({ source: null, target: null })
+    if (drawTool === "route-node" || drawTool === "route-edge") {
+      setDrawTool(null)
+    }
+  }, [selectedLayerId])
+
   useEffect(() => {
     setSelectedFeatureId((current) =>
       features.some((feature) => feature.id === current) ? current : null,

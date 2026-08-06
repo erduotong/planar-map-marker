@@ -57,7 +57,7 @@ export function EndpointPickerDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            选择节点，或选择任意楼层的点要素作为端点。
+            节点只能是当前图层的；跨楼层连边请在「点要素」中选择目标楼层的点。
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-1">

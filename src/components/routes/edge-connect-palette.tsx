@@ -79,7 +79,7 @@ export function EdgeConnectPalette({
         />
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        也可以直接在地图上点击节点或点要素拾取端点。
+        地图上可点击本图层的节点或点要素；跨楼层端点请从列表选择点要素。
       </p>
       {complete && (
         <div className="mt-3 grid gap-3 border-t pt-3">

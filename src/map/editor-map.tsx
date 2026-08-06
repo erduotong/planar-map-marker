@@ -1,5 +1,6 @@
 import L from "leaflet"
 import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 import "@geoman-io/leaflet-geoman-free"
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css"
 import { imageBounds, latLngToPixel, pixelToLatLng } from "@/domain/coords"
@@ -294,8 +295,14 @@ export function EditorMap({
         (ref) => ref.kind === "feature" && ref.floorId !== floorId,
       )
       const selected = edge.id === latestRef.current.selectedRouteEdgeId
+      // Blocked edges (passable = false) render in red to stand out.
+      const color = !edge.passable
+        ? "#dc2626"
+        : crossFloor
+          ? "#64748b"
+          : model.style.color
       const polyline = L.polyline(latLngs, {
-        color: crossFloor ? "#64748b" : model.style.color,
+        color,
         weight: selected ? model.style.weight + 2 : model.style.weight,
         opacity: crossFloor ? Math.min(model.opacity, 0.7) : model.opacity,
         dashArray: edgeHasFeatureEndpoint(edge) ? "6 6" : undefined,
@@ -370,10 +377,13 @@ export function EditorMap({
     if (!map) return
     const current = latestRef.current
     const size = current.size
-    const visibleNodes = current.routeNodes.filter((node) =>
+    const targetLayerId = current.drawLayerId
+    const layerVisible = (layerId: string) =>
       current.layers.some(
-        (layer) => layer.id === node.layerId && layer.visible && !layer.locked,
-      ),
+        (layer) => layer.id === layerId && layer.visible && !layer.locked,
+      )
+    const visibleNodes = current.routeNodes.filter(
+      (node) => node.layerId === targetLayerId && layerVisible(node.layerId),
     )
     const snappedNode = hitTest(
       map,
@@ -388,11 +398,7 @@ export function EditorMap({
     }
     const visibleFeatures = current.features
       .filter(isPointFeature)
-      .filter((feature) =>
-        current.layers.some(
-          (layer) => layer.id === feature.layerId && layer.visible,
-        ),
-      )
+      .filter((feature) => layerVisible(feature.layerId))
     const snappedFeature = hitTest(
       map,
       event,
@@ -412,15 +418,17 @@ export function EditorMap({
     if (!map) return
     const current = latestRef.current
     const size = current.size
-    const visibleNodes = current.routeNodes.filter((node) =>
-      current.layers.some(
-        (layer) => layer.id === node.layerId && layer.visible,
-      ),
+    const targetLayerId = current.drawLayerId
+    const layerVisible = (layerId: string) =>
+      current.layers.some((layer) => layer.id === layerId && layer.visible)
+
+    const currentNodes = current.routeNodes.filter(
+      (node) => node.layerId === targetLayerId && layerVisible(node.layerId),
     )
     const snappedNode = hitTest(
       map,
       event,
-      visibleNodes,
+      currentNodes,
       (node) => node.coord,
       size,
     )
@@ -428,13 +436,18 @@ export function EditorMap({
       current.onPickEndpoint({ kind: "node", nodeId: snappedNode.id })
       return
     }
+    const otherNodes = current.routeNodes.filter(
+      (node) => node.layerId !== targetLayerId && layerVisible(node.layerId),
+    )
+    if (hitTest(map, event, otherNodes, (node) => node.coord, size)) {
+      toast.error(
+        "该节点属于其他图层；跨楼层连边请用点要素端点（端点选择器里可按楼层选择）",
+      )
+      return
+    }
     const visibleFeatures = current.features
       .filter(isPointFeature)
-      .filter((feature) =>
-        current.layers.some(
-          (layer) => layer.id === feature.layerId && layer.visible,
-        ),
-      )
+      .filter((feature) => layerVisible(feature.layerId))
     const snappedFeature = hitTest(
       map,
       event,

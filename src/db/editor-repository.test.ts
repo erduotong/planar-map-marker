@@ -181,7 +181,19 @@ describe("EditorRepository", () => {
         direction: "both",
         passable: true,
       }),
-    ).rejects.toThrow("终点不存在")
+    ).rejects.toThrow("终点节点不属于当前路线图层")
+
+    // A foreign node that is silently absent (e.g. a dangling ref) is still
+    // caught by the endpoint-resolution check.
+    await expect(
+      repository.createRouteEdge({
+        layerId: routeA.id,
+        source: { kind: "node", nodeId: nodeA.id },
+        target: { kind: "node", nodeId: "missing-node" },
+        direction: "both",
+        passable: true,
+      }),
+    ).rejects.toThrow("终点节点不属于当前路线图层")
   })
 
   it("deleting a node cascades to its edges", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  assertNodeEndpointsBelongToLayer,
   assertValidRouteEdge,
   buildEndpointContext,
   endpointLabel,
@@ -141,6 +142,30 @@ describe("edge validation", () => {
         { kind: "node", nodeId: "n1" },
         { kind: "feature", floorId: "f", layerId: "p", featureId: "f1" },
         context,
+      ),
+    ).not.toThrow()
+  })
+
+  it("rejects node endpoints that belong to another layer", () => {
+    expect(() =>
+      assertNodeEndpointsBelongToLayer(
+        { kind: "node", nodeId: "n-foreign" },
+        { kind: "node", nodeId: "n1" },
+        [node],
+      ),
+    ).toThrow("起点节点不属于当前路线图层")
+    expect(() =>
+      assertNodeEndpointsBelongToLayer(
+        { kind: "feature", floorId: "f", layerId: "p", featureId: "f1" },
+        { kind: "node", nodeId: "n-foreign" },
+        [node],
+      ),
+    ).toThrow("终点节点不属于当前路线图层")
+    expect(() =>
+      assertNodeEndpointsBelongToLayer(
+        { kind: "node", nodeId: "n1" },
+        { kind: "feature", floorId: "f", layerId: "p", featureId: "f1" },
+        [node],
       ),
     ).not.toThrow()
   })

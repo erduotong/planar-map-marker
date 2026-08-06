@@ -138,3 +138,26 @@ export function assertValidRouteEdge(
     throw new RouteEdgeValidationError("终点不存在或已失效")
   }
 }
+
+/**
+ * Route nodes belong to exactly one layer, so an edge's node endpoints must be
+ * nodes of the layer that will own the edge. Cross-floor connections use point
+ * features as endpoints instead — this error explains that clearly.
+ */
+export function assertNodeEndpointsBelongToLayer(
+  source: EndpointRef,
+  target: EndpointRef,
+  layerNodes: readonly RouteNode[],
+): void {
+  const nodeIds = new Set(layerNodes.map((node) => node.id))
+  for (const [label, ref] of [
+    ["起点", source],
+    ["终点", target],
+  ] as const) {
+    if (ref.kind === "node" && !nodeIds.has(ref.nodeId)) {
+      throw new RouteEdgeValidationError(
+        `${label}节点不属于当前路线图层；跨楼层连边请改用点要素端点（端点选择器里可按楼层选择）`,
+      )
+    }
+  }
+}

@@ -1,5 +1,6 @@
 import { db, type MapPointerDatabase } from "@/db/database"
 import {
+  assertNodeEndpointsBelongToLayer,
   assertValidRouteEdge,
   buildEndpointContext,
   type EndpointContext,
@@ -507,6 +508,7 @@ export class EditorRepository {
 
   async createRouteEdge(input: CreateRouteEdgeInput): Promise<RouteEdge> {
     const nodes = await this.listRouteNodes(input.layerId)
+    assertNodeEndpointsBelongToLayer(input.source, input.target, nodes)
     const context = await this.buildEdgeContext(
       input.layerId,
       [input.source, input.target],
