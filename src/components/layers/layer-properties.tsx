@@ -1,4 +1,5 @@
 import { Paintbrush, Trash2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,14 @@ import {
 import { Slider } from "@/components/ui/slider"
 import type { Constraint, Layer } from "@/domain/models"
 
+/**
+ * Colour pickers and the opacity slider fire many onChange events while being
+ * dragged. Editing against a local draft gives instant visual feedback, while a
+ * debounced commit collapses the whole drag into a single command / undo step.
+ * A blur (or unmount) flushes the pending value so nothing is lost.
+ */
+const COMMIT_DELAY_MS = 200
+
 export function LayerProperties({
   layer,
   constraints,
@@ -23,8 +32,49 @@ export function LayerProperties({
   onChange: (layer: Layer) => void
   onDelete: () => void
 }) {
+  const [draft, setDraft] = useState(layer)
+  const timerRef = useRef<number | null>(null)
+  const pendingRef = useRef<Layer | null>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
+  useEffect(() => {
+    setDraft(layer)
+  }, [layer])
+
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      if (pendingRef.current) {
+        onChangeRef.current(pendingRef.current)
+        pendingRef.current = null
+      }
+    },
+    [],
+  )
+
+  function flushPending() {
+    if (pendingRef.current) {
+      onChangeRef.current(pendingRef.current)
+      pendingRef.current = null
+    }
+  }
+
+  function commit(next: Layer) {
+    setDraft(next)
+    pendingRef.current = next
+    if (timerRef.current !== null) clearTimeout(timerRef.current)
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null
+      if (pendingRef.current) {
+        onChange(pendingRef.current)
+        pendingRef.current = null
+      }
+    }, COMMIT_DELAY_MS)
+  }
+
   const constraintId =
-    layer.kind === "route" ? layer.nodeConstraintId : layer.constraintId
+    draft.kind === "route" ? draft.nodeConstraintId : draft.constraintId
 
   return (
     <div className="border-t p-3">
@@ -45,10 +95,9 @@ export function LayerProperties({
         <Field>
           <FieldLabel>名称</FieldLabel>
           <Input
-            value={layer.name}
-            onChange={(event) =>
-              onChange({ ...layer, name: event.target.value })
-            }
+            value={draft.name}
+            onBlur={flushPending}
+            onChange={(event) => commit({ ...draft, name: event.target.value })}
           />
         </Field>
         <Field>
@@ -57,10 +106,10 @@ export function LayerProperties({
             value={constraintId ?? "none"}
             onValueChange={(value) => {
               const id = value === "none" ? null : String(value)
-              onChange(
-                layer.kind === "route"
-                  ? { ...layer, nodeConstraintId: id }
-                  : { ...layer, constraintId: id },
+              commit(
+                draft.kind === "route"
+                  ? { ...draft, nodeConstraintId: id }
+                  : { ...draft, constraintId: id },
               )
             }}
           >
@@ -82,12 +131,12 @@ export function LayerProperties({
             <FieldLabel>线条</FieldLabel>
             <Input
               type="color"
-              value={layer.style.color}
+              value={draft.style.color}
               className="h-8 p-1"
               onChange={(event) =>
-                onChange({
-                  ...layer,
-                  style: { ...layer.style, color: event.target.value },
+                commit({
+                  ...draft,
+                  style: { ...draft.style, color: event.target.value },
                 })
               }
             />
@@ -96,28 +145,28 @@ export function LayerProperties({
             <FieldLabel>填充</FieldLabel>
             <Input
               type="color"
-              value={layer.style.fillColor}
+              value={draft.style.fillColor}
               className="h-8 p-1"
               onChange={(event) =>
-                onChange({
-                  ...layer,
-                  style: { ...layer.style, fillColor: event.target.value },
+                commit({
+                  ...draft,
+                  style: { ...draft.style, fillColor: event.target.value },
                 })
               }
             />
           </Field>
         </div>
         <Field>
-          <FieldLabel>图层透明度 {Math.round(layer.opacity * 100)}%</FieldLabel>
+          <FieldLabel>图层透明度 {Math.round(draft.opacity * 100)}%</FieldLabel>
           <Slider
-            value={[layer.opacity * 100]}
+            value={[draft.opacity * 100]}
             min={0}
             max={100}
             step={1}
             onValueChange={(value) => {
               const raw = Array.isArray(value) ? value[0] : value
               const opacity = (raw ?? 100) / 100
-              onChange({ ...layer, opacity })
+              commit({ ...draft, opacity })
             }}
           />
         </Field>

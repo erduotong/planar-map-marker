@@ -74,7 +74,7 @@ export function FloorSidebar({
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r bg-background">
+    <aside className="flex h-full w-full shrink-0 flex-col border-r bg-background">
       <div className="flex h-12 shrink-0 items-center border-b px-3">
         <span className="text-sm font-medium">楼层</span>
         <Button

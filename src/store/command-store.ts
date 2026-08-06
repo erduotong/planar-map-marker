@@ -43,91 +43,109 @@ function setBusy(scope: string, busy: boolean) {
   }))
 }
 
+/**
+ * Commands for a scope run strictly one at a time. Continuous UI inputs (a
+ * colour picker, an opacity slider) can fire several mutations in one frame;
+ * queueing them keeps IndexedDB writes ordered without ever throwing a
+ * "scope is already busy" error. `busyScopes` still reflects the live state so
+ * the UI can disable controls while a long-running command is in flight.
+ */
+const queues: Record<string, Promise<unknown>> = {}
+
+function enqueue(scope: string, task: () => Promise<void>): Promise<void> {
+  const previous = queues[scope] ?? Promise.resolve()
+  const next = previous.then(task, task)
+  queues[scope] = next.then(
+    () => undefined,
+    () => undefined,
+  )
+  return next
+}
+
+async function runScoped(scope: string, task: () => Promise<void>) {
+  setBusy(scope, true)
+  try {
+    await task()
+  } finally {
+    setBusy(scope, false)
+  }
+}
+
 /** Executes a user action and records its inverse on the scope's undo stack. */
-export async function dispatchCommand(scope: string, command: Command) {
-  if (useCommandStore.getState().busyScopes[scope]) {
-    throw new Error(`Command scope is already busy: ${scope}`)
-  }
-
-  setBusy(scope, true)
-  try {
-    const inverse = await command.execute()
-    useCommandStore.setState((state) => {
-      const history = historyFor(state, scope)
-      return {
-        histories: {
-          ...state.histories,
-          [scope]: {
-            undo: [
-              ...history.undo,
-              { label: command.label, command: inverse },
-            ].slice(-HISTORY_LIMIT),
-            redo: [],
+export function dispatchCommand(
+  scope: string,
+  command: Command,
+): Promise<void> {
+  return enqueue(scope, () =>
+    runScoped(scope, async () => {
+      const inverse = await command.execute()
+      useCommandStore.setState((state) => {
+        const history = historyFor(state, scope)
+        return {
+          histories: {
+            ...state.histories,
+            [scope]: {
+              undo: [
+                ...history.undo,
+                { label: command.label, command: inverse },
+              ].slice(-HISTORY_LIMIT),
+              redo: [],
+            },
           },
-        },
-      }
-    })
-  } finally {
-    setBusy(scope, false)
-  }
+        }
+      })
+    }),
+  )
 }
 
-export async function undoCommand(scope: string) {
-  if (useCommandStore.getState().busyScopes[scope]) return
-  const history = historyFor(useCommandStore.getState(), scope)
-  const entry = history.undo.at(-1)
-  if (!entry) return
-
-  setBusy(scope, true)
-  try {
-    const redo = await entry.command.execute()
-    useCommandStore.setState((state) => {
-      const current = historyFor(state, scope)
-      return {
-        histories: {
-          ...state.histories,
-          [scope]: {
-            undo: current.undo.slice(0, -1),
-            redo: [
-              ...current.redo,
-              { label: entry.label, command: redo },
-            ].slice(-HISTORY_LIMIT),
+export function undoCommand(scope: string): Promise<void> {
+  return enqueue(scope, () =>
+    runScoped(scope, async () => {
+      const entry = historyFor(useCommandStore.getState(), scope).undo.at(-1)
+      if (!entry) return
+      const redo = await entry.command.execute()
+      useCommandStore.setState((state) => {
+        const current = historyFor(state, scope)
+        return {
+          histories: {
+            ...state.histories,
+            [scope]: {
+              undo: current.undo.slice(0, -1),
+              redo: [
+                ...current.redo,
+                { label: entry.label, command: redo },
+              ].slice(-HISTORY_LIMIT),
+            },
           },
-        },
-      }
-    })
-  } finally {
-    setBusy(scope, false)
-  }
+        }
+      })
+    }),
+  )
 }
 
-export async function redoCommand(scope: string) {
-  if (useCommandStore.getState().busyScopes[scope]) return
-  const history = historyFor(useCommandStore.getState(), scope)
-  const entry = history.redo.at(-1)
-  if (!entry) return
-
-  setBusy(scope, true)
-  try {
-    const inverse = await entry.command.execute()
-    useCommandStore.setState((state) => {
-      const current = historyFor(state, scope)
-      return {
-        histories: {
-          ...state.histories,
-          [scope]: {
-            undo: [
-              ...current.undo,
-              { label: entry.label, command: inverse },
-            ].slice(-HISTORY_LIMIT),
-            redo: current.redo.slice(0, -1),
+export function redoCommand(scope: string): Promise<void> {
+  return enqueue(scope, () =>
+    runScoped(scope, async () => {
+      const entry = historyFor(useCommandStore.getState(), scope).redo.at(-1)
+      if (!entry) return
+      const inverse = await entry.command.execute()
+      useCommandStore.setState((state) => {
+        const current = historyFor(state, scope)
+        return {
+          histories: {
+            ...state.histories,
+            [scope]: {
+              undo: [
+                ...current.undo,
+                { label: entry.label, command: inverse },
+              ].slice(-HISTORY_LIMIT),
+              redo: current.redo.slice(0, -1),
+            },
           },
-        },
-      }
-    })
-  } finally {
-    setBusy(scope, false)
-  }
+        }
+      })
+    }),
+  )
 }
 
 export function clearCommandHistory(scope: string) {

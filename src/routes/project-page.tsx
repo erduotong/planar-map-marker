@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -32,6 +33,7 @@ import { BASEMAP_ACCEPT, inspectImage } from "@/domain/basemap"
 import type { AssetMime, Floor } from "@/domain/models"
 import { useBasemapAsset, useFloors } from "@/hooks/use-floors"
 import { useProject } from "@/hooks/use-projects"
+import { usePersistedState } from "@/lib/use-persisted-state"
 import { dispatchCommand } from "@/store/command-store"
 import {
   CreateFloorCommand,
@@ -56,6 +58,10 @@ export function ProjectPage() {
   const [pending, setPending] = useState(false)
   const hiddenUploadRef = useRef<HTMLInputElement>(null)
   const [uploadTarget, setUploadTarget] = useState<Floor | null>(null)
+  const [floorWidth, setFloorWidth] = usePersistedState(
+    "map-pointer:floor-panel-width",
+    256,
+  )
 
   useEffect(() => {
     if (!floorList?.length) {
@@ -186,18 +192,28 @@ export function ProjectPage() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <FloorSidebar
-          floors={floorList}
-          selectedId={selectedFloorId}
-          onSelect={setSelectedFloorId}
-          onCreate={() => setFloorDialog({ mode: "create" })}
-          onRename={(floor) => setFloorDialog({ mode: "rename", floor })}
-          onDelete={setDeleteTarget}
-          onUpload={(floor) => {
-            setUploadTarget(floor)
-            queueMicrotask(() => hiddenUploadRef.current?.click())
-          }}
-          onReorder={reorderFloors}
+        <div style={{ width: floorWidth }} className="flex shrink-0 flex-col">
+          <FloorSidebar
+            floors={floorList}
+            selectedId={selectedFloorId}
+            onSelect={setSelectedFloorId}
+            onCreate={() => setFloorDialog({ mode: "create" })}
+            onRename={(floor) => setFloorDialog({ mode: "rename", floor })}
+            onDelete={setDeleteTarget}
+            onUpload={(floor) => {
+              setUploadTarget(floor)
+              queueMicrotask(() => hiddenUploadRef.current?.click())
+            }}
+            onReorder={reorderFloors}
+          />
+        </div>
+        <ResizeHandle
+          axis="x"
+          onDelta={(delta) =>
+            setFloorWidth((current) =>
+              Math.min(440, Math.max(160, current + delta)),
+            )
+          }
         />
         <section className="relative min-w-0 flex-1">
           {!selectedFloor ? (

@@ -7,20 +7,34 @@ import {
 } from "@/components/constraints/constraint-dialog"
 import { ConstraintMenu } from "@/components/constraints/constraint-menu"
 import { FeatureProperties } from "@/components/features/feature-properties"
+import { FeatureTable } from "@/components/features/feature-table"
 import { LayerDialog } from "@/components/layers/layer-dialog"
 import { LayerProperties } from "@/components/layers/layer-properties"
 import { LayerSidebar } from "@/components/layers/layer-sidebar"
 import { Button } from "@/components/ui/button"
+import { ResizeHandle } from "@/components/ui/resize-handle"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { initialProperties } from "@/domain/constraint-compiler"
-import type { Asset, Constraint, Geometry, LayerKind } from "@/domain/models"
+import {
+  compileConstraint,
+  initialProperties,
+} from "@/domain/constraint-compiler"
+import type {
+  Asset,
+  Constraint,
+  Feature,
+  Geometry,
+  LayerKind,
+  Properties,
+} from "@/domain/models"
 import { useConstraints, useFeatures, useLayers } from "@/hooks/use-editor-data"
-import { type DrawTool, EditorMap } from "@/map/editor-map"
+import { usePersistedState } from "@/lib/use-persisted-state"
+import { type DrawTool, EditorMap, type FocusRequest } from "@/map/editor-map"
 import {
   dispatchCommand,
   redoCommand,
@@ -37,6 +51,7 @@ import {
   PutConstraintCommand,
   PutFeatureCommand,
   PutLayerCommand,
+  ReorderLayersCommand,
   UpdateLayerCommand,
 } from "@/store/editor-commands"
 
@@ -44,6 +59,13 @@ interface EditorWorkspaceProps {
   projectId: string
   floorId: string
   asset: Asset
+}
+
+const RIGHT_PANEL_WIDTH_KEY = "map-pointer:right-panel-width"
+const RIGHT_PANEL_BOTTOM_KEY = "map-pointer:right-panel-bottom-height"
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
 }
 
 export function EditorWorkspace({
@@ -65,6 +87,16 @@ export function EditorWorkspace({
   >(null)
   const [pending, setPending] = useState(false)
   const [imageUrl, setImageUrl] = useState<string>()
+  const [view, setView] = useState<"layers" | "table">("layers")
+  const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null)
+  const [rightWidth, setRightWidth] = usePersistedState(
+    RIGHT_PANEL_WIDTH_KEY,
+    288,
+  )
+  const [bottomHeight, setBottomHeight] = usePersistedState(
+    RIGHT_PANEL_BOTTOM_KEY,
+    220,
+  )
   const history = useCommandHistory(projectId)
 
   useEffect(() => {
@@ -123,6 +155,14 @@ export function EditorWorkspace({
         : selectedLayer.constraintId
     return constraints.find((constraint) => constraint.id === id) ?? null
   }, [constraints, selectedLayer])
+
+  const layerFeatures = useMemo(
+    () =>
+      selectedLayer
+        ? features.filter((feature) => feature.layerId === selectedLayer.id)
+        : [],
+    [features, selectedLayer],
+  )
 
   async function run(command: Parameters<typeof dispatchCommand>[1]) {
     setPending(true)
@@ -183,6 +223,63 @@ export function EditorWorkspace({
     setDrawTool((current) => (current === tool ? null : tool))
   }
 
+  /** Map click: selecting a feature also switches the active layer to its owner. */
+  function selectFeature(feature: Feature | null) {
+    setSelectedFeatureId(feature?.id ?? null)
+    if (feature) {
+      setSelectedLayerId(feature.layerId)
+      setDrawTool(null)
+    }
+  }
+
+  /** Table row click: select, switch layer, and fly the map to the feature. */
+  function selectAndFocus(feature: Feature) {
+    setSelectedLayerId(feature.layerId)
+    setSelectedFeatureId(feature.id)
+    setDrawTool(null)
+    setView("layers")
+    setFocusRequest({ featureId: feature.id, token: Date.now() })
+  }
+
+  async function updateFeatureProperties(
+    feature: Feature,
+    properties: Properties,
+  ): Promise<boolean> {
+    const layer = layers.find((candidate) => candidate.id === feature.layerId)
+    const constraintId =
+      layer?.kind === "route" ? layer?.nodeConstraintId : layer?.constraintId
+    const constraint =
+      constraints.find((candidate) => candidate.id === constraintId) ?? null
+    if (constraint) {
+      const result = compileConstraint(constraint).safeParse(properties)
+      if (!result.success) {
+        toast.error(result.error.issues[0]?.message ?? "属性校验失败")
+        return false
+      }
+    }
+    try {
+      await run(
+        new PutFeatureCommand({
+          ...feature,
+          properties,
+          updatedAt: Date.now(),
+        }),
+      )
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function deleteFeature(feature: Feature) {
+    try {
+      await run(new DeleteFeatureCommand(feature.id))
+      if (selectedFeatureId === feature.id) setSelectedFeatureId(null)
+    } catch {
+      // run already reports the error.
+    }
+  }
+
   if (!imageUrl) return <div className="h-full bg-muted/50" />
 
   return (
@@ -196,8 +293,9 @@ export function EditorWorkspace({
           selectedFeatureId={selectedFeatureId}
           drawTool={drawTool}
           drawLayerId={selectedLayerId}
+          focus={focusRequest}
           onDrawComplete={drawComplete}
-          onSelectFeature={setSelectedFeatureId}
+          onSelectFeature={selectFeature}
           onGeometryChange={(feature, geometry) =>
             run(
               new PutFeatureCommand({
@@ -256,49 +354,106 @@ export function EditorWorkspace({
         </div>
       </div>
 
-      <div className="flex w-72 shrink-0 flex-col border-l bg-background">
-        <div className="min-h-0 flex-1">
-          <LayerSidebar
-            layers={layers}
-            selectedId={selectedLayerId}
-            onSelect={(id) => {
-              setSelectedLayerId(id)
-              setSelectedFeatureId(null)
-              setDrawTool(null)
-            }}
-            onCreate={() => setLayerDialogOpen(true)}
-            onToggleVisible={(layer) =>
-              run(new UpdateLayerCommand(layer.id, { visible: !layer.visible }))
-            }
-            onToggleLocked={(layer) =>
-              run(new UpdateLayerCommand(layer.id, { locked: !layer.locked }))
-            }
-            onDelete={(layer) => run(new DeleteLayerCommand(layer.id))}
-          />
-        </div>
-        <ScrollArea className="max-h-[45%] shrink-0 border-t">
-          {selectedFeature ? (
-            <FeatureProperties
-              key={selectedFeature.id}
-              feature={selectedFeature}
-              constraint={selectedConstraint}
-              onSave={(feature) => run(new PutFeatureCommand(feature))}
-              onDelete={() =>
-                run(new DeleteFeatureCommand(selectedFeature.id)).then(() =>
-                  setSelectedFeatureId(null),
-                )
+      <ResizeHandle
+        axis="x"
+        onDelta={(delta) =>
+          setRightWidth((current) => clamp(current + delta, 260, 640))
+        }
+      />
+
+      <div
+        style={{ width: rightWidth }}
+        className="flex shrink-0 flex-col border-l bg-background"
+      >
+        <Tabs
+          value={view}
+          onValueChange={(value) => {
+            if (value === "layers" || value === "table") setView(value)
+          }}
+          className="flex min-h-0 flex-1 flex-col"
+        >
+          <TabsList className="mx-2 mt-2 grid shrink-0 grid-cols-2">
+            <TabsTrigger value="layers">图层</TabsTrigger>
+            <TabsTrigger value="table">数据表</TabsTrigger>
+          </TabsList>
+          <TabsContent value="layers" className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1">
+              <LayerSidebar
+                layers={layers}
+                selectedId={selectedLayerId}
+                onSelect={(id) => {
+                  setSelectedLayerId(id)
+                  setSelectedFeatureId(null)
+                  setDrawTool(null)
+                }}
+                onCreate={() => setLayerDialogOpen(true)}
+                onToggleVisible={(layer) =>
+                  run(
+                    new UpdateLayerCommand(layer.id, {
+                      visible: !layer.visible,
+                    }),
+                  )
+                }
+                onToggleLocked={(layer) =>
+                  run(
+                    new UpdateLayerCommand(layer.id, { locked: !layer.locked }),
+                  )
+                }
+                onDelete={(layer) => run(new DeleteLayerCommand(layer.id))}
+                onReorder={(ids) => run(new ReorderLayersCommand(floorId, ids))}
+              />
+            </div>
+            <ResizeHandle
+              axis="y"
+              onDelta={(delta) =>
+                setBottomHeight((current) => clamp(current - delta, 120, 480))
               }
             />
-          ) : selectedLayer ? (
-            <LayerProperties
-              key={selectedLayer.id}
-              layer={selectedLayer}
-              constraints={constraints}
-              onChange={(layer) => run(new PutLayerCommand(layer))}
-              onDelete={() => run(new DeleteLayerCommand(selectedLayer.id))}
-            />
-          ) : null}
-        </ScrollArea>
+            <ScrollArea
+              style={{ height: bottomHeight }}
+              className="shrink-0 border-t"
+            >
+              {selectedFeature ? (
+                <FeatureProperties
+                  key={selectedFeature.id}
+                  feature={selectedFeature}
+                  constraint={selectedConstraint}
+                  onSave={(feature) => run(new PutFeatureCommand(feature))}
+                  onDelete={() =>
+                    run(new DeleteFeatureCommand(selectedFeature.id)).then(() =>
+                      setSelectedFeatureId(null),
+                    )
+                  }
+                />
+              ) : selectedLayer ? (
+                <LayerProperties
+                  key={selectedLayer.id}
+                  layer={selectedLayer}
+                  constraints={constraints}
+                  onChange={(layer) => run(new PutLayerCommand(layer))}
+                  onDelete={() => run(new DeleteLayerCommand(selectedLayer.id))}
+                />
+              ) : null}
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="table" className="min-h-0 flex-1">
+            {selectedLayer ? (
+              <FeatureTable
+                features={layerFeatures}
+                layer={selectedLayer}
+                constraint={selectedConstraint}
+                selectedFeatureId={selectedFeatureId}
+                onSelect={selectAndFocus}
+                onUpdate={updateFeatureProperties}
+                onDelete={deleteFeature}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
+                请先选择一个图层
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       <LayerDialog

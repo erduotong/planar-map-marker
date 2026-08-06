@@ -113,11 +113,13 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  label,
   ...props
 }: SelectPrimitive.Item.Props) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
+      label={label ?? extractText(children)}
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
@@ -136,6 +138,26 @@ function SelectItem({
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>
   )
+}
+
+/**
+ * Base UI's SelectValue resolves the selected item's displayed text through the
+ * item's `label`; when no `label` is supplied it falls back to the raw value,
+ * which for us would print a UUID instead of a constraint name. Extract a plain
+ * text label from the children so every Select shows the human-readable label.
+ */
+function extractText(node: React.ReactNode): string | undefined {
+  if (node == null) return undefined
+  if (typeof node === "string" || typeof node === "number") return String(node)
+  if (Array.isArray(node)) {
+    const parts = node.map(extractText).filter(Boolean)
+    return parts.length ? parts.join("") : undefined
+  }
+  if (typeof node === "object" && "props" in node) {
+    const element = node as React.ReactElement<{ children?: React.ReactNode }>
+    return extractText(element.props.children)
+  }
+  return undefined
 }
 
 function SelectSeparator({

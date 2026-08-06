@@ -8,6 +8,12 @@ import "leaflet/dist/leaflet.css"
 
 export type DrawTool = "point" | "polygon" | null
 
+export interface FocusRequest {
+  featureId: string
+  /** Increment to re-trigger a focus on the same feature. */
+  token: number
+}
+
 interface EditorMapProps {
   imageUrl: string
   size: Size
@@ -16,8 +22,9 @@ interface EditorMapProps {
   selectedFeatureId: string | null
   drawTool: DrawTool
   drawLayerId: string | null
+  focus: FocusRequest | null
   onDrawComplete: (layerId: string, geometry: Geometry) => void
-  onSelectFeature: (id: string | null) => void
+  onSelectFeature: (feature: Feature | null) => void
   onGeometryChange: (feature: Feature, geometry: Geometry) => void
 }
 
@@ -29,6 +36,7 @@ export function EditorMap({
   selectedFeatureId,
   drawTool,
   drawLayerId,
+  focus,
   onDrawComplete,
   onSelectFeature,
   onGeometryChange,
@@ -127,7 +135,7 @@ export function EditorMap({
       leafletLayer.addTo(group)
       leafletLayer.on("click", (event) => {
         L.DomEvent.stopPropagation(event)
-        latestRef.current.onSelectFeature(feature.id)
+        latestRef.current.onSelectFeature(feature)
       })
       if (
         feature.id === selectedFeatureId &&
@@ -143,6 +151,19 @@ export function EditorMap({
     }
   }, [features, layers, selectedFeatureId, size])
 
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !focus) return
+    const feature = latestRef.current.features.find(
+      (candidate) => candidate.id === focus.featureId,
+    )
+    if (!feature) return
+    map.fitBounds(featureBounds(feature, size), {
+      animate: true,
+      padding: [48, 48],
+    })
+  }, [focus, size])
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       <div
@@ -154,6 +175,15 @@ export function EditorMap({
       </div>
     </div>
   )
+}
+
+function featureBounds(feature: Feature, size: Size): L.LatLngBounds {
+  const points =
+    feature.geometry.type === "Point"
+      ? [feature.geometry.coord]
+      : feature.geometry.rings.flat()
+  const latLngs = points.map((pixel) => pixelToLatLng(pixel, size))
+  return L.latLngBounds(latLngs)
 }
 
 function featureToLeaflet(feature: Feature, layer: Layer, size: Size): L.Layer {
