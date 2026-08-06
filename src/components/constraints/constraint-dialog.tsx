@@ -232,7 +232,10 @@ function FieldRow({
         }}
       >
         <SelectTrigger className="w-full">
-          <SelectValue />
+          <SelectValue>
+            {TYPE_OPTIONS.find((option) => option.value === field.type)
+              ?.label ?? field.type}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {TYPE_OPTIONS.map((option) => (

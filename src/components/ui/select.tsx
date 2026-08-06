@@ -141,10 +141,10 @@ function SelectItem({
 }
 
 /**
- * Base UI's SelectValue resolves the selected item's displayed text through the
- * item's `label`; when no `label` is supplied it falls back to the raw value,
- * which for us would print a UUID instead of a constraint name. Extract a plain
- * text label from the children so every Select shows the human-readable label.
+ * The trigger's displayed text comes from the items fed to the Select root, so
+ * each item needs a plain-text label. Items whose children are simple strings
+ * can be read directly; anything richer is left for base-ui's textContent
+ * fallback inside useCompositeListItem.
  */
 function extractText(node: React.ReactNode): string | undefined {
   if (node == null) return undefined

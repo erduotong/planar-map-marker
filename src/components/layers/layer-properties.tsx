@@ -114,7 +114,12 @@ export function LayerProperties({
             }}
           >
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue>
+                {constraintId
+                  ? (constraints.find((item) => item.id === constraintId)
+                      ?.name ?? constraintId)
+                  : "无约束"}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">无约束</SelectItem>

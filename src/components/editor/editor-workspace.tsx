@@ -357,7 +357,9 @@ export function EditorWorkspace({
       <ResizeHandle
         axis="x"
         onDelta={(delta) =>
-          setRightWidth((current) => clamp(current + delta, 260, 640))
+          // The handle sits at the panel's left edge; dragging it right shrinks
+          // the panel, so the width moves opposite to the pointer delta.
+          setRightWidth((current) => clamp(current - delta, 260, 640))
         }
       />
 
