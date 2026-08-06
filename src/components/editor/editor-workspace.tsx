@@ -1,4 +1,12 @@
-import { MapPin, MousePointer2, Pentagon, Redo2, Undo2 } from "lucide-react"
+import {
+  CircleDot,
+  Link2,
+  MapPin,
+  MousePointer2,
+  Pentagon,
+  Redo2,
+  Undo2,
+} from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
@@ -11,6 +19,11 @@ import { FeatureTable } from "@/components/features/feature-table"
 import { LayerDialog } from "@/components/layers/layer-dialog"
 import { LayerProperties } from "@/components/layers/layer-properties"
 import { LayerSidebar } from "@/components/layers/layer-sidebar"
+import { EdgeConnectPalette } from "@/components/routes/edge-connect-palette"
+import { EndpointPickerDialog } from "@/components/routes/endpoint-picker"
+import { RouteEdgeProperties } from "@/components/routes/route-edge-properties"
+import { RouteNodeProperties } from "@/components/routes/route-node-properties"
+import { RouteTable } from "@/components/routes/route-table"
 import { Button } from "@/components/ui/button"
 import { ResizeHandle } from "@/components/ui/resize-handle"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -21,14 +34,29 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { initialProperties } from "@/domain/constraint-compiler"
+import { buildEndpointContext } from "@/domain/graph"
 import type {
   Asset,
   Constraint,
+  EdgeDirection,
+  EndpointRef,
   Feature,
   Geometry,
   LayerKind,
+  Pixel,
+  RouteEdge,
+  RouteNode,
 } from "@/domain/models"
-import { useConstraints, useFeatures, useLayers } from "@/hooks/use-editor-data"
+import {
+  useConstraints,
+  useFeatures,
+  useLayers,
+  useProjectLayers,
+  useProjectPointFeatures,
+  useRouteEdges,
+  useRouteNodes,
+} from "@/hooks/use-editor-data"
+import { useFloors } from "@/hooks/use-floors"
 import { usePersistedState } from "@/lib/use-persisted-state"
 import { type DrawTool, EditorMap, type FocusRequest } from "@/map/editor-map"
 import {
@@ -41,12 +69,19 @@ import {
   CreateConstraintCommand,
   CreateFeatureCommand,
   CreateLayerCommand,
+  CreateRouteEdgeCommand,
+  CreateRouteNodeCommand,
   DeleteConstraintCommand,
   DeleteFeatureCommand,
   DeleteLayerCommand,
+  DeleteRouteEdgeCommand,
+  DeleteRouteNodeCommand,
+  MoveRouteNodeCommand,
   PutConstraintCommand,
   PutFeatureCommand,
   PutLayerCommand,
+  PutRouteEdgeCommand,
+  PutRouteNodeCommand,
   ReorderLayersCommand,
   UpdateLayerCommand,
 } from "@/store/editor-commands"
@@ -72,8 +107,23 @@ export function EditorWorkspace({
   const constraints = useConstraints(projectId) ?? []
   const layers = useLayers(floorId) ?? []
   const features = useFeatures(layers.map((layer) => layer.id)) ?? []
+  const floors = useFloors(projectId) ?? []
+  const projectLayers = useProjectLayers(projectId) ?? []
+  const pointFeatures = useProjectPointFeatures(projectId) ?? []
+  const routeLayers = useMemo(
+    () => layers.filter((layer) => layer.kind === "route"),
+    [layers],
+  )
+  const routeNodes = useRouteNodes(routeLayers.map((layer) => layer.id)) ?? []
+  const routeEdges = useRouteEdges(routeLayers.map((layer) => layer.id)) ?? []
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null)
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(
+    null,
+  )
+  const [selectedRouteNodeId, setSelectedRouteNodeId] = useState<string | null>(
+    null,
+  )
+  const [selectedRouteEdgeId, setSelectedRouteEdgeId] = useState<string | null>(
     null,
   )
   const [drawTool, setDrawTool] = useState<DrawTool>(null)
@@ -93,6 +143,11 @@ export function EditorWorkspace({
     RIGHT_PANEL_BOTTOM_KEY,
     220,
   )
+  const [pendingEdge, setPendingEdge] = useState<{
+    source: EndpointRef | null
+    target: EndpointRef | null
+  }>({ source: null, target: null })
+  const [pickerSlot, setPickerSlot] = useState<"source" | "target" | null>(null)
   const history = useCommandHistory(projectId)
 
   useEffect(() => {
@@ -114,6 +169,18 @@ export function EditorWorkspace({
       features.some((feature) => feature.id === current) ? current : null,
     )
   }, [features])
+
+  useEffect(() => {
+    setSelectedRouteNodeId((current) =>
+      routeNodes.some((node) => node.id === current) ? current : null,
+    )
+  }, [routeNodes])
+
+  useEffect(() => {
+    setSelectedRouteEdgeId((current) =>
+      routeEdges.some((edge) => edge.id === current) ? current : null,
+    )
+  }, [routeEdges])
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -143,14 +210,38 @@ export function EditorWorkspace({
     layers.find((layer) => layer.id === selectedLayerId) ?? null
   const selectedFeature =
     features.find((feature) => feature.id === selectedFeatureId) ?? null
+  const selectedRouteNode =
+    routeNodes.find((node) => node.id === selectedRouteNodeId) ?? null
+  const selectedRouteEdge =
+    routeEdges.find((edge) => edge.id === selectedRouteEdgeId) ?? null
   const selectedConstraint = useMemo(() => {
-    if (!selectedLayer) return null
-    const id =
-      selectedLayer.kind === "route"
-        ? selectedLayer.nodeConstraintId
-        : selectedLayer.constraintId
-    return constraints.find((constraint) => constraint.id === id) ?? null
+    if (!selectedLayer || selectedLayer.kind === "route") return null
+    return (
+      constraints.find(
+        (constraint) => constraint.id === selectedLayer.constraintId,
+      ) ?? null
+    )
   }, [constraints, selectedLayer])
+  const selectedNodeConstraint = useMemo(() => {
+    if (selectedLayer?.kind !== "route") return null
+    return (
+      constraints.find(
+        (constraint) => constraint.id === selectedLayer.nodeConstraintId,
+      ) ?? null
+    )
+  }, [constraints, selectedLayer])
+  const selectedEdgeConstraint = useMemo(() => {
+    if (selectedLayer?.kind !== "route") return null
+    return (
+      constraints.find(
+        (constraint) => constraint.id === selectedLayer.edgeConstraintId,
+      ) ?? null
+    )
+  }, [constraints, selectedLayer])
+  const routeContext = useMemo(
+    () => buildEndpointContext(routeNodes, pointFeatures),
+    [routeNodes, pointFeatures],
+  )
 
   const layerFeatures = useMemo(
     () =>
@@ -191,11 +282,10 @@ export function EditorWorkspace({
 
   async function drawComplete(layerId: string, geometry: Geometry) {
     const layer = layers.find((candidate) => candidate.id === layerId)
-    if (!layer) return
-    const constraintId =
-      layer.kind === "route" ? layer.nodeConstraintId : layer.constraintId
+    if (!layer || layer.kind === "route") return
     const constraint =
-      constraints.find((candidate) => candidate.id === constraintId) ?? null
+      constraints.find((candidate) => candidate.id === layer.constraintId) ??
+      null
     await run(
       new CreateFeatureCommand(
         layerId,
@@ -212,6 +302,14 @@ export function EditorWorkspace({
       toast.error("请先选择一个未锁定的图层")
       return
     }
+    if (tool === "route-node" || tool === "route-edge") {
+      if (selectedLayer.kind !== "route") {
+        toast.error("请先选择路线图层")
+        return
+      }
+      setDrawTool((current) => (current === tool ? null : tool))
+      return
+    }
     if (selectedLayer.kind !== tool) {
       toast.error(tool === "point" ? "请选择点图层" : "请选择多边形图层")
       return
@@ -222,8 +320,30 @@ export function EditorWorkspace({
   /** Map click: selecting a feature also switches the active layer to its owner. */
   function selectFeature(feature: Feature | null) {
     setSelectedFeatureId(feature?.id ?? null)
+    setSelectedRouteNodeId(null)
+    setSelectedRouteEdgeId(null)
     if (feature) {
       setSelectedLayerId(feature.layerId)
+      setDrawTool(null)
+    }
+  }
+
+  function selectRouteNode(node: RouteNode | null) {
+    setSelectedRouteNodeId(node?.id ?? null)
+    setSelectedRouteEdgeId(null)
+    setSelectedFeatureId(null)
+    if (node) {
+      setSelectedLayerId(node.layerId)
+      setDrawTool(null)
+    }
+  }
+
+  function selectRouteEdge(edge: RouteEdge | null) {
+    setSelectedRouteEdgeId(edge?.id ?? null)
+    setSelectedRouteNodeId(null)
+    setSelectedFeatureId(null)
+    if (edge) {
+      setSelectedLayerId(edge.layerId)
       setDrawTool(null)
     }
   }
@@ -232,6 +352,8 @@ export function EditorWorkspace({
   function selectAndFocus(feature: Feature) {
     setSelectedLayerId(feature.layerId)
     setSelectedFeatureId(feature.id)
+    setSelectedRouteNodeId(null)
+    setSelectedRouteEdgeId(null)
     setDrawTool(null)
     setView("layers")
     setFocusRequest({ featureId: feature.id, token: Date.now() })
@@ -270,6 +392,143 @@ export function EditorWorkspace({
     }
   }
 
+  async function placeRouteNode(coord: Pixel) {
+    if (selectedLayer?.kind !== "route") {
+      toast.error("请先选择路线图层")
+      return
+    }
+    const constraint =
+      constraints.find(
+        (candidate) => candidate.id === selectedLayer.nodeConstraintId,
+      ) ?? null
+    await run(
+      new CreateRouteNodeCommand(
+        selectedLayer.id,
+        coord,
+        initialProperties(constraint),
+      ),
+    )
+    toast.success("节点已创建")
+  }
+
+  function pickEndpoint(ref: EndpointRef | null) {
+    if (selectedLayer?.kind !== "route") {
+      toast.error("请先选择路线图层")
+      return
+    }
+    if (!pendingEdge.source) {
+      if (!ref) {
+        toast.error("未吸附到端点，请点击节点或点要素，或从列表选择")
+        return
+      }
+      setPendingEdge({ source: ref, target: null })
+      toast("起点已选择，请再选择终点")
+      return
+    }
+    if (!pendingEdge.target) {
+      if (!ref) {
+        toast.error("未吸附到端点，请点击节点或点要素，或从列表选择")
+        return
+      }
+      setPendingEdge((current) => ({ ...current, target: ref }))
+      toast.success("两端点已就绪，点击「创建边」完成")
+    }
+  }
+
+  async function createEdge(direction: EdgeDirection, passable: boolean) {
+    if (selectedLayer?.kind !== "route") return
+    const { source, target } = pendingEdge
+    if (!source || !target) return
+    try {
+      await run(
+        new CreateRouteEdgeCommand({
+          layerId: selectedLayer.id,
+          source,
+          target,
+          direction,
+          passable,
+        }),
+      )
+      setPendingEdge({ source: null, target: null })
+      setDrawTool(null)
+      toast.success("边已创建")
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "创建边失败")
+    }
+  }
+
+  function cancelEdgeConnect() {
+    setPendingEdge({ source: null, target: null })
+    setDrawTool(null)
+  }
+
+  function pickEndpointFromDialog(ref: EndpointRef) {
+    pickEndpoint(ref)
+    setPickerSlot(null)
+  }
+
+  function moveRouteNode(nodeId: string, coord: Pixel) {
+    return run(new MoveRouteNodeCommand(nodeId, coord))
+  }
+
+  async function updateRouteNodeField(
+    node: RouteNode,
+    key: string,
+    value: unknown,
+  ): Promise<boolean> {
+    try {
+      if (key === "coord") {
+        await run(new MoveRouteNodeCommand(node.id, value as Pixel))
+      } else {
+        await run(
+          new PutRouteNodeCommand({
+            ...node,
+            properties: { ...node.properties, [key]: value },
+            updatedAt: Date.now(),
+          }),
+        )
+      }
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function updateRouteEdgeField(
+    edge: RouteEdge,
+    key: string,
+    value: unknown,
+  ): Promise<boolean> {
+    try {
+      const next: RouteEdge = { ...edge, updatedAt: Date.now() }
+      if (key === "direction") next.direction = value as EdgeDirection
+      else if (key === "passable") next.passable = value === true
+      else next.properties = { ...edge.properties, [key]: value }
+      await run(new PutRouteEdgeCommand(next))
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function deleteRouteNode(node: RouteNode) {
+    try {
+      await run(new DeleteRouteNodeCommand(node.id))
+      if (selectedRouteNodeId === node.id) setSelectedRouteNodeId(null)
+    } catch {
+      // run already reports the error.
+    }
+  }
+
+  async function deleteRouteEdge(edge: RouteEdge) {
+    try {
+      await run(new DeleteRouteEdgeCommand(edge.id))
+      if (selectedRouteEdgeId === edge.id) setSelectedRouteEdgeId(null)
+    } catch {
+      // run already reports the error.
+    }
+  }
+
   if (!imageUrl) return <div className="h-full bg-muted/50" />
 
   return (
@@ -278,9 +537,15 @@ export function EditorWorkspace({
         <EditorMap
           imageUrl={imageUrl}
           size={asset.size}
+          floorId={floorId}
           layers={layers}
           features={features}
+          routeNodes={routeNodes}
+          routeEdges={routeEdges}
+          pointFeatures={pointFeatures}
           selectedFeatureId={selectedFeatureId}
+          selectedRouteNodeId={selectedRouteNodeId}
+          selectedRouteEdgeId={selectedRouteEdgeId}
           drawTool={drawTool}
           drawLayerId={selectedLayerId}
           focus={focusRequest}
@@ -295,6 +560,11 @@ export function EditorWorkspace({
               }),
             )
           }
+          onPlaceRouteNode={placeRouteNode}
+          onSelectRouteNode={selectRouteNode}
+          onSelectRouteEdge={selectRouteEdge}
+          onMoveRouteNode={moveRouteNode}
+          onPickEndpoint={pickEndpoint}
         />
         <div className="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 bg-background p-1 shadow-md ring-1 ring-border">
           <ToolButton
@@ -314,6 +584,18 @@ export function EditorWorkspace({
             active={drawTool === "polygon"}
             icon={<Pentagon />}
             onClick={() => chooseTool("polygon")}
+          />
+          <ToolButton
+            label="放置节点"
+            active={drawTool === "route-node"}
+            icon={<CircleDot />}
+            onClick={() => chooseTool("route-node")}
+          />
+          <ToolButton
+            label="连接边"
+            active={drawTool === "route-edge"}
+            icon={<Link2 />}
+            onClick={() => chooseTool("route-edge")}
           />
           <span className="mx-1 h-6 w-px bg-border" />
           <ToolButton
@@ -342,6 +624,16 @@ export function EditorWorkspace({
             }
           />
         </div>
+        {drawTool === "route-edge" && (
+          <EdgeConnectPalette
+            source={pendingEdge.source}
+            target={pendingEdge.target}
+            context={routeContext}
+            onPickSlot={setPickerSlot}
+            onCreate={createEdge}
+            onCancel={cancelEdgeConnect}
+          />
+        )}
       </div>
 
       <ResizeHandle
@@ -376,6 +668,9 @@ export function EditorWorkspace({
                 onSelect={(id) => {
                   setSelectedLayerId(id)
                   setSelectedFeatureId(null)
+                  setSelectedRouteNodeId(null)
+                  setSelectedRouteEdgeId(null)
+                  setPendingEdge({ source: null, target: null })
                   setDrawTool(null)
                 }}
                 onCreate={() => setLayerDialogOpen(true)}
@@ -405,7 +700,32 @@ export function EditorWorkspace({
               style={{ height: bottomHeight }}
               className="shrink-0 border-t"
             >
-              {selectedFeature ? (
+              {selectedRouteNode ? (
+                <RouteNodeProperties
+                  key={selectedRouteNode.id}
+                  node={selectedRouteNode}
+                  constraint={selectedNodeConstraint}
+                  onSave={(node) => run(new PutRouteNodeCommand(node))}
+                  onDelete={() =>
+                    run(new DeleteRouteNodeCommand(selectedRouteNode.id)).then(
+                      () => setSelectedRouteNodeId(null),
+                    )
+                  }
+                />
+              ) : selectedRouteEdge ? (
+                <RouteEdgeProperties
+                  key={selectedRouteEdge.id}
+                  edge={selectedRouteEdge}
+                  constraint={selectedEdgeConstraint}
+                  context={routeContext}
+                  onSave={(edge) => run(new PutRouteEdgeCommand(edge))}
+                  onDelete={() =>
+                    run(new DeleteRouteEdgeCommand(selectedRouteEdge.id)).then(
+                      () => setSelectedRouteEdgeId(null),
+                    )
+                  }
+                />
+              ) : selectedFeature ? (
                 <FeatureProperties
                   key={selectedFeature.id}
                   feature={selectedFeature}
@@ -430,15 +750,37 @@ export function EditorWorkspace({
           </TabsContent>
           <TabsContent value="table" className="min-h-0 flex-1">
             {selectedLayer ? (
-              <FeatureTable
-                features={layerFeatures}
-                layer={selectedLayer}
-                constraint={selectedConstraint}
-                selectedFeatureId={selectedFeatureId}
-                onSelect={selectAndFocus}
-                onUpdate={updateFeatureField}
-                onDelete={deleteFeature}
-              />
+              selectedLayer.kind === "route" ? (
+                <RouteTable
+                  nodes={routeNodes.filter(
+                    (node) => node.layerId === selectedLayer.id,
+                  )}
+                  edges={routeEdges.filter(
+                    (edge) => edge.layerId === selectedLayer.id,
+                  )}
+                  nodeConstraint={selectedNodeConstraint}
+                  edgeConstraint={selectedEdgeConstraint}
+                  context={routeContext}
+                  selectedNodeId={selectedRouteNodeId}
+                  selectedEdgeId={selectedRouteEdgeId}
+                  onSelectNode={selectRouteNode}
+                  onSelectEdge={selectRouteEdge}
+                  onUpdateNode={updateRouteNodeField}
+                  onUpdateEdge={updateRouteEdgeField}
+                  onDeleteNode={deleteRouteNode}
+                  onDeleteEdge={deleteRouteEdge}
+                />
+              ) : (
+                <FeatureTable
+                  features={layerFeatures}
+                  layer={selectedLayer}
+                  constraint={selectedConstraint}
+                  selectedFeatureId={selectedFeatureId}
+                  onSelect={selectAndFocus}
+                  onUpdate={updateFeatureField}
+                  onDelete={deleteFeature}
+                />
+              )
             ) : (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
                 请先选择一个图层
@@ -473,6 +815,18 @@ export function EditorWorkspace({
           if (!open) setConstraintDialog(null)
         }}
         onSubmit={saveConstraint}
+      />
+      <EndpointPickerDialog
+        open={pickerSlot !== null}
+        title={pickerSlot === "source" ? "选择起点" : "选择终点"}
+        nodes={routeNodes.filter((node) => node.layerId === selectedLayer?.id)}
+        features={pointFeatures}
+        floors={floors}
+        layers={projectLayers}
+        onPick={pickEndpointFromDialog}
+        onOpenChange={(open) => {
+          if (!open) setPickerSlot(null)
+        }}
       />
     </div>
   )

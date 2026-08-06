@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { MapPointerDatabase } from "@/db/database"
+import { EditorRepository } from "@/db/editor-repository"
 import { FloorBasemapSizeError, FloorRepository } from "@/db/floor-repository"
 import { ProjectRepository } from "@/db/project-repository"
 
@@ -129,5 +130,51 @@ describe("FloorRepository", () => {
     expect(await database.assets.count()).toBe(1)
     expect(await repository.get(floor1.id)).toBeDefined()
     expect(await repository.get(floor3.id)).toBeDefined()
+  })
+
+  it("deleting a floor cascades cross-floor edges and restore brings them back", async () => {
+    const editor = new EditorRepository(database)
+    const floor1 = await repository.create({ projectId, name: "1F" })
+    const floor2 = await repository.create({ projectId, name: "2F" })
+    const pointLayer = await editor.createLayer({
+      floorId: floor1.id,
+      name: "门",
+      kind: "point",
+    })
+    const feature = await editor.createFeature(
+      pointLayer.id,
+      { type: "Point", coord: { x: 100, y: 100 } },
+      {},
+    )
+    const routeLayer = await editor.createLayer({
+      floorId: floor2.id,
+      name: "路线",
+      kind: "route",
+    })
+    const node = await editor.createRouteNode(
+      routeLayer.id,
+      { x: 10, y: 10 },
+      {},
+    )
+    const edge = await editor.createRouteEdge({
+      layerId: routeLayer.id,
+      source: { kind: "node", nodeId: node.id },
+      target: {
+        kind: "feature",
+        floorId: floor1.id,
+        layerId: pointLayer.id,
+        featureId: feature.id,
+      },
+      direction: "both",
+      passable: true,
+    })
+
+    const result = await repository.delete(floor1.id)
+    expect(await database.routeEdges.get(edge.id)).toBeUndefined()
+    expect(result.referencingEdges.map((item) => item.id)).toEqual([edge.id])
+
+    await repository.restore(result.snapshot, result.referencingEdges)
+    expect(await database.routeEdges.get(edge.id)).toBeDefined()
+    expect(await database.features.get(feature.id)).toEqual(feature)
   })
 })

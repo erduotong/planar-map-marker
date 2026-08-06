@@ -4,7 +4,7 @@ import {
   floors,
   type SetBasemapInput,
 } from "@/db/floor-repository"
-import type { Floor } from "@/domain/models"
+import type { Floor, RouteEdge } from "@/domain/models"
 import type { Command } from "@/store/command-store"
 
 export class CreateFloorCommand implements Command {
@@ -85,9 +85,12 @@ export class DeleteFloorCommand implements Command {
   ) {}
 
   async execute(): Promise<Command> {
-    const snapshot = await this.repository.snapshot(this.floorId)
-    await this.repository.delete(this.floorId)
-    return new RestoreFloorCommand(snapshot, this.repository)
+    const result = await this.repository.delete(this.floorId)
+    return new RestoreFloorCommand(
+      result.snapshot,
+      result.referencingEdges,
+      this.repository,
+    )
   }
 }
 
@@ -96,11 +99,12 @@ class RestoreFloorCommand implements Command {
 
   constructor(
     private readonly snapshot: FloorSnapshot,
+    private readonly referencingEdges: RouteEdge[],
     private readonly repository: FloorRepository,
   ) {}
 
   async execute(): Promise<Command> {
-    await this.repository.restore(this.snapshot)
+    await this.repository.restore(this.snapshot, this.referencingEdges)
     return new DeleteFloorCommand(this.snapshot.floor.id, this.repository)
   }
 }

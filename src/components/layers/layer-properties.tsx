@@ -73,9 +73,6 @@ export function LayerProperties({
     }, COMMIT_DELAY_MS)
   }
 
-  const constraintId =
-    draft.kind === "route" ? draft.nodeConstraintId : draft.constraintId
-
   return (
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
@@ -100,37 +97,35 @@ export function LayerProperties({
             onChange={(event) => commit({ ...draft, name: event.target.value })}
           />
         </Field>
-        <Field>
-          <FieldLabel>数据约束</FieldLabel>
-          <Select
-            value={constraintId ?? "none"}
-            onValueChange={(value) => {
-              const id = value === "none" ? null : String(value)
-              commit(
-                draft.kind === "route"
-                  ? { ...draft, nodeConstraintId: id }
-                  : { ...draft, constraintId: id },
-              )
-            }}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue>
-                {constraintId
-                  ? (constraints.find((item) => item.id === constraintId)
-                      ?.name ?? constraintId)
-                  : "无约束"}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">无约束</SelectItem>
-              {constraints.map((constraint) => (
-                <SelectItem key={constraint.id} value={constraint.id}>
-                  {constraint.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+        {draft.kind === "route" ? (
+          <>
+            <Field>
+              <FieldLabel>节点数据约束</FieldLabel>
+              <ConstraintSelect
+                value={draft.nodeConstraintId}
+                constraints={constraints}
+                onSelect={(id) => commit({ ...draft, nodeConstraintId: id })}
+              />
+            </Field>
+            <Field>
+              <FieldLabel>边数据约束</FieldLabel>
+              <ConstraintSelect
+                value={draft.edgeConstraintId}
+                constraints={constraints}
+                onSelect={(id) => commit({ ...draft, edgeConstraintId: id })}
+              />
+            </Field>
+          </>
+        ) : (
+          <Field>
+            <FieldLabel>数据约束</FieldLabel>
+            <ConstraintSelect
+              value={draft.constraintId}
+              constraints={constraints}
+              onSelect={(id) => commit({ ...draft, constraintId: id })}
+            />
+          </Field>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field>
             <FieldLabel>线条</FieldLabel>
@@ -177,5 +172,38 @@ export function LayerProperties({
         </Field>
       </div>
     </div>
+  )
+}
+
+function ConstraintSelect({
+  value,
+  constraints,
+  onSelect,
+}: {
+  value: string | null
+  constraints: Constraint[]
+  onSelect: (id: string | null) => void
+}) {
+  return (
+    <Select
+      value={value ?? "none"}
+      onValueChange={(next) => onSelect(next === "none" ? null : String(next))}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue>
+          {value
+            ? (constraints.find((item) => item.id === value)?.name ?? value)
+            : "无约束"}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="none">无约束</SelectItem>
+        {constraints.map((constraint) => (
+          <SelectItem key={constraint.id} value={constraint.id}>
+            {constraint.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

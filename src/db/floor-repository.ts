@@ -1,4 +1,5 @@
 import { db, type MapPointerDatabase } from "@/db/database"
+import { edgeReferencesAnyFeature } from "@/domain/graph"
 import type {
   Asset,
   AssetMime,
@@ -24,6 +25,16 @@ export interface FloorSnapshot {
   features: Feature[]
   routeNodes: RouteNode[]
   routeEdges: RouteEdge[]
+}
+
+/**
+ * A floor delete also removes route edges on OTHER floors that referenced this
+ * floor's point features; they travel with the snapshot so undo can restore
+ * them.
+ */
+export interface FloorDeleteResult {
+  snapshot: FloorSnapshot
+  referencingEdges: RouteEdge[]
 }
 
 export interface SetBasemapInput {
@@ -239,8 +250,18 @@ export class FloorRepository {
     }
   }
 
-  async delete(floorId: string): Promise<void> {
+  async delete(floorId: string): Promise<FloorDeleteResult> {
     const snapshot = await this.snapshot(floorId)
+    const layerIds = snapshot.layers.map((layer) => layer.id)
+    const layerIdSet = new Set(layerIds)
+    const featureIds = new Set(snapshot.features.map((feature) => feature.id))
+    const referencingEdges = featureIds.size
+      ? (await this.database.routeEdges.toArray()).filter(
+          (edge) =>
+            !layerIdSet.has(edge.layerId) &&
+            edgeReferencesAnyFeature(edge, featureIds),
+        )
+      : []
     await this.database.transaction(
       "rw",
       [
@@ -253,7 +274,6 @@ export class FloorRepository {
         this.database.routeEdges,
       ],
       async () => {
-        const layerIds = snapshot.layers.map((layer) => layer.id)
         if (layerIds.length) {
           await Promise.all([
             this.database.features.where("layerId").anyOf(layerIds).delete(),
@@ -262,6 +282,11 @@ export class FloorRepository {
           ])
         }
         await this.database.layers.where("floorId").equals(floorId).delete()
+        if (referencingEdges.length) {
+          await this.database.routeEdges.bulkDelete(
+            referencingEdges.map((edge) => edge.id),
+          )
+        }
         if (snapshot.asset) {
           await this.database.assets.delete(snapshot.asset.id)
         }
@@ -270,9 +295,13 @@ export class FloorRepository {
         await this.touchProject(snapshot.floor.projectId, Date.now())
       },
     )
+    return { snapshot, referencingEdges }
   }
 
-  async restore(snapshot: FloorSnapshot): Promise<void> {
+  async restore(
+    snapshot: FloorSnapshot,
+    referencingEdges: RouteEdge[] = [],
+  ): Promise<void> {
     await this.database.transaction(
       "rw",
       [
@@ -292,6 +321,9 @@ export class FloorRepository {
           this.database.features.bulkPut(snapshot.features),
           this.database.routeNodes.bulkPut(snapshot.routeNodes),
           this.database.routeEdges.bulkPut(snapshot.routeEdges),
+          referencingEdges.length
+            ? this.database.routeEdges.bulkPut(referencingEdges)
+            : Promise.resolve(),
         ])
         await this.touchProject(snapshot.floor.projectId, Date.now())
       },

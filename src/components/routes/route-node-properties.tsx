@@ -4,20 +4,20 @@ import { ConstraintFieldInput } from "@/components/features/constraint-field-inp
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { compileConstraint } from "@/domain/constraint-compiler"
-import type { Constraint, Feature } from "@/domain/models"
+import type { Constraint, RouteNode } from "@/domain/models"
 
-export function FeatureProperties({
-  feature,
+export function RouteNodeProperties({
+  node,
   constraint,
   onSave,
   onDelete,
 }: {
-  feature: Feature
+  node: RouteNode
   constraint: Constraint | null
-  onSave: (feature: Feature) => Promise<void>
+  onSave: (node: RouteNode) => Promise<void>
   onDelete: () => Promise<void>
 }) {
-  const [properties, setProperties] = useState(feature.properties)
+  const [properties, setProperties] = useState(node.properties)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const fields = constraint?.fields ?? []
   const schema = useMemo(
@@ -41,22 +41,26 @@ export function FeatureProperties({
       }
     }
     setErrors({})
-    await onSave({ ...feature, properties, updatedAt: Date.now() })
+    await onSave({ ...node, properties, updatedAt: Date.now() })
   }
 
   return (
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-sm font-medium">标注属性</span>
+        <span className="text-sm font-medium">节点属性</span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="删除标注"
+          aria-label="删除节点"
           onClick={onDelete}
         >
           <Trash2 />
         </Button>
+      </div>
+      <div className="mb-3 grid grid-cols-2 gap-2 font-mono text-xs text-muted-foreground">
+        <span>x {Math.round(node.coord.x)}</span>
+        <span>y {Math.round(node.coord.y)}</span>
       </div>
       {constraint ? (
         <div className="grid gap-4">
@@ -82,12 +86,12 @@ export function FeatureProperties({
             </Field>
           ))}
           <Button onClick={save}>
-            <Save /> 保存属性
+            <Save /> 保存节点
           </Button>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          该图层尚未绑定数据约束。
+          该路线图层尚未绑定节点数据约束。
         </p>
       )}
     </div>

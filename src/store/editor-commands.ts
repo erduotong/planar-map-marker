@@ -1,9 +1,13 @@
 import {
   type ConstraintSnapshot,
   type CreateConstraintInput,
+  type CreateRouteEdgeInput,
   type EditorRepository,
   editor,
+  type FeatureDeleteResult,
   type LayerSnapshot,
+  type RouteNodeDeleteResult,
+  type RouteNodeMove,
   type UpdateLayerInput,
 } from "@/db/editor-repository"
 import type {
@@ -13,6 +17,8 @@ import type {
   Layer,
   LayerKind,
   Properties,
+  RouteEdge,
+  RouteNode,
 } from "@/domain/models"
 import type { Command } from "@/store/command-store"
 
@@ -214,11 +220,161 @@ export class DeleteFeatureCommand implements Command {
 class RestoreFeatureCommand implements Command {
   readonly label = "恢复标注"
   constructor(
-    private readonly feature: Feature,
+    private readonly result: FeatureDeleteResult,
     private readonly repository: EditorRepository,
   ) {}
   async execute(): Promise<Command> {
-    await this.repository.putFeature(this.feature)
-    return new DeleteFeatureCommand(this.feature.id, this.repository)
+    await this.repository.putFeature(this.result.feature)
+    await this.repository.restoreRouteEdges(this.result.edges)
+    return new DeleteFeatureCommand(this.result.feature.id, this.repository)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Route graph commands
+// ---------------------------------------------------------------------------
+
+export class CreateRouteNodeCommand implements Command {
+  readonly label = "创建节点"
+  constructor(
+    private readonly layerId: string,
+    private readonly coord: { x: number; y: number },
+    private readonly properties: Properties,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    const node = await this.repository.createRouteNode(
+      this.layerId,
+      this.coord,
+      this.properties,
+    )
+    return new DeleteRouteNodeCommand(node.id, this.repository)
+  }
+}
+
+export class PutRouteNodeCommand implements Command {
+  readonly label = "编辑节点"
+  constructor(
+    private readonly node: RouteNode,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    const current = (
+      await this.repository.listRouteNodes(this.node.layerId)
+    ).find((candidate) => candidate.id === this.node.id)
+    if (!current) throw new Error(`RouteNode not found: ${this.node.id}`)
+    await this.repository.putRouteNode(this.node)
+    return new PutRouteNodeCommand(current, this.repository)
+  }
+}
+
+export class DeleteRouteNodeCommand implements Command {
+  readonly label = "删除节点"
+  constructor(
+    private readonly id: string,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    return new RestoreRouteNodeCommand(
+      await this.repository.deleteRouteNode(this.id),
+      this.repository,
+    )
+  }
+}
+
+class RestoreRouteNodeCommand implements Command {
+  readonly label = "恢复节点"
+  constructor(
+    private readonly result: RouteNodeDeleteResult,
+    private readonly repository: EditorRepository,
+  ) {}
+  async execute(): Promise<Command> {
+    await this.repository.putRouteNode(this.result.node)
+    await this.repository.restoreRouteEdges(this.result.edges)
+    return new DeleteRouteNodeCommand(this.result.node.id, this.repository)
+  }
+}
+
+export class CreateRouteEdgeCommand implements Command {
+  readonly label = "创建边"
+  constructor(
+    private readonly input: CreateRouteEdgeInput,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    const edge = await this.repository.createRouteEdge(this.input)
+    return new DeleteRouteEdgeCommand(edge.id, this.repository)
+  }
+}
+
+export class PutRouteEdgeCommand implements Command {
+  readonly label = "编辑边"
+  constructor(
+    private readonly edge: RouteEdge,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    const current = (
+      await this.repository.listRouteEdges(this.edge.layerId)
+    ).find((candidate) => candidate.id === this.edge.id)
+    if (!current) throw new Error(`RouteEdge not found: ${this.edge.id}`)
+    await this.repository.putRouteEdge(this.edge)
+    return new PutRouteEdgeCommand(current, this.repository)
+  }
+}
+
+export class DeleteRouteEdgeCommand implements Command {
+  readonly label = "删除边"
+  constructor(
+    private readonly id: string,
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    return new RestoreRouteEdgeCommand(
+      await this.repository.deleteRouteEdge(this.id),
+      this.repository,
+    )
+  }
+}
+
+class RestoreRouteEdgeCommand implements Command {
+  readonly label = "恢复边"
+  constructor(
+    private readonly edge: RouteEdge,
+    private readonly repository: EditorRepository,
+  ) {}
+  async execute(): Promise<Command> {
+    await this.repository.putRouteEdge(this.edge)
+    return new DeleteRouteEdgeCommand(this.edge.id, this.repository)
+  }
+}
+
+export class MoveRouteNodeCommand implements Command {
+  readonly label = "移动节点"
+  constructor(
+    private readonly id: string,
+    private readonly coord: { x: number; y: number },
+    private readonly repository: EditorRepository = editor,
+  ) {}
+  async execute(): Promise<Command> {
+    const move = await this.repository.moveRouteNode(this.id, this.coord)
+    return new RestoreRouteNodeMoveCommand(move, this.repository)
+  }
+}
+
+class RestoreRouteNodeMoveCommand implements Command {
+  readonly label = "恢复节点位置"
+  constructor(
+    private readonly move: RouteNodeMove,
+    private readonly repository: EditorRepository,
+  ) {}
+  async execute(): Promise<Command> {
+    await this.repository.moveRouteNode(this.move.node.id, this.move.node.coord)
+    await this.repository.restoreRouteEdges(this.move.edges)
+    return new MoveRouteNodeCommand(
+      this.move.node.id,
+      this.move.node.coord,
+      this.repository,
+    )
   }
 }
