@@ -246,7 +246,7 @@ export function ProjectsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>删除“{deleteTarget?.name}”？</AlertDialogTitle>
             <AlertDialogDescription>
-              该项目的全部楼层、底图、图层和标注都会从当前浏览器中删除。此操作可在离开项目列表前撤销。
+              该项目的全部楼层、底图、图层和标注都会从当前浏览器中删除。该操作不可撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
