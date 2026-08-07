@@ -92,8 +92,8 @@ interface EditorWorkspaceProps {
   asset: Asset
 }
 
-const RIGHT_PANEL_WIDTH_KEY = "map-pointer:right-panel-width"
-const RIGHT_PANEL_BOTTOM_KEY = "map-pointer:right-panel-bottom-height"
+const RIGHT_PANEL_WIDTH_KEY = "planar-map-marker:right-panel-width"
+const RIGHT_PANEL_BOTTOM_KEY = "planar-map-marker:right-panel-bottom-height"
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))

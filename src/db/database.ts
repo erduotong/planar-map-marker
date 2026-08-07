@@ -15,7 +15,7 @@ import type {
  * indexes mirror the ownership tree so deleting a project can be handled in
  * one Dexie transaction without scanning unrelated data.
  */
-export class MapPointerDatabase extends Dexie {
+export class PlanarMapMarkerDatabase extends Dexie {
   projects!: EntityTable<Project, "id">
   constraints!: EntityTable<Constraint, "id">
   assets!: EntityTable<Asset, "id">
@@ -25,7 +25,7 @@ export class MapPointerDatabase extends Dexie {
   routeNodes!: EntityTable<RouteNode, "id">
   routeEdges!: EntityTable<RouteEdge, "id">
 
-  constructor(name = "map-pointer") {
+  constructor(name = "planar-map-marker") {
     super(name)
 
     this.version(1).stores({
@@ -41,4 +41,4 @@ export class MapPointerDatabase extends Dexie {
   }
 }
 
-export const db = new MapPointerDatabase()
+export const db = new PlanarMapMarkerDatabase()

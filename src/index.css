@@ -122,42 +122,42 @@
  * stacking context below the app shell so portalled dialogs at z-50 always win.
  * `isolation` also prevents future panes/plugins from escaping this boundary.
  */
-.map-pointer-leaflet {
+.planar-map-marker-leaflet {
   position: relative;
   z-index: 0;
   isolation: isolate;
 }
 
-.map-pointer-leaflet .leaflet-pane {
+.planar-map-marker-leaflet .leaflet-pane {
   z-index: 4;
 }
 
-.map-pointer-leaflet .leaflet-tile-pane {
+.planar-map-marker-leaflet .leaflet-tile-pane {
   z-index: 2;
 }
 
-.map-pointer-leaflet .leaflet-overlay-pane {
+.planar-map-marker-leaflet .leaflet-overlay-pane {
   z-index: 4;
 }
 
-.map-pointer-leaflet .leaflet-shadow-pane {
+.planar-map-marker-leaflet .leaflet-shadow-pane {
   z-index: 5;
 }
 
-.map-pointer-leaflet .leaflet-marker-pane {
+.planar-map-marker-leaflet .leaflet-marker-pane {
   z-index: 6;
 }
 
-.map-pointer-leaflet .leaflet-tooltip-pane {
+.planar-map-marker-leaflet .leaflet-tooltip-pane {
   z-index: 7;
 }
 
-.map-pointer-leaflet .leaflet-popup-pane {
+.planar-map-marker-leaflet .leaflet-popup-pane {
   z-index: 8;
 }
 
-.map-pointer-leaflet .leaflet-top,
-.map-pointer-leaflet .leaflet-bottom {
+.planar-map-marker-leaflet .leaflet-top,
+.planar-map-marker-leaflet .leaflet-bottom {
   z-index: 10;
 }
 

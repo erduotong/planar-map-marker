@@ -1,7 +1,7 @@
 export type Theme = "light" | "dark" | "system"
 export type ResolvedTheme = "light" | "dark"
 
-export const THEME_STORAGE_KEY = "map-pointer:theme"
+export const THEME_STORAGE_KEY = "planar-map-marker:theme"
 
 const THEMES: readonly Theme[] = ["light", "dark", "system"]
 

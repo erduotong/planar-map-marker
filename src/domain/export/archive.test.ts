@@ -1,6 +1,6 @@
 import JSZip from "jszip"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { MapPointerDatabase } from "@/db/database"
+import { PlanarMapMarkerDatabase } from "@/db/database"
 import { ProjectRepository } from "@/db/project-repository"
 import {
   ArchiveImportError,
@@ -36,11 +36,11 @@ describe("buildGeojsonZip", () => {
 })
 
 describe("package round-trip", () => {
-  let database: MapPointerDatabase
+  let database: PlanarMapMarkerDatabase
   let repository: ProjectRepository
 
   beforeEach(() => {
-    database = new MapPointerDatabase(`archive-test-${crypto.randomUUID()}`)
+    database = new PlanarMapMarkerDatabase(`archive-test-${crypto.randomUUID()}`)
     repository = new ProjectRepository(database)
   })
 
@@ -54,7 +54,7 @@ describe("package round-trip", () => {
     const parsed = await parseProjectPackage(await blob.arrayBuffer())
 
     expect(parsed.manifest).toMatchObject({
-      format: "map-pointer-project",
+      format: "planar-map-marker-project",
       version: ARCHIVE_VERSION,
       projectName: "示例项目",
     })
@@ -91,9 +91,9 @@ describe("package round-trip", () => {
     zip.file(
       "manifest.json",
       JSON.stringify({
-        format: "map-pointer-project",
+        format: "planar-map-marker-project",
         version: ARCHIVE_VERSION + 1,
-        app: "map-pointer",
+        app: "planar-map-marker",
         exportedAt: 1,
         projectId: "project-1",
         projectName: "示例项目",
@@ -116,7 +116,7 @@ describe("package round-trip", () => {
     zip.file("project.json", JSON.stringify({}))
     const blob = await zip.generateAsync({ type: "blob" })
     await expect(parseProjectPackage(await blob.arrayBuffer())).rejects.toThrow(
-      /不是 map-pointer 项目包/,
+      /不是 Planar Map Marker 项目包/,
     )
   })
 
@@ -125,9 +125,9 @@ describe("package round-trip", () => {
     zip.file(
       "manifest.json",
       JSON.stringify({
-        format: "map-pointer-project",
+        format: "planar-map-marker-project",
         version: 1,
-        app: "map-pointer",
+        app: "planar-map-marker",
         exportedAt: 1,
         projectId: "project-1",
         projectName: "示例项目",

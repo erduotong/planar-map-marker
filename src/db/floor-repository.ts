@@ -1,4 +1,4 @@
-import { db, type MapPointerDatabase } from "@/db/database"
+import { db, type PlanarMapMarkerDatabase } from "@/db/database"
 import { edgeReferencesAnyFeature } from "@/domain/graph"
 import type {
   Asset,
@@ -52,7 +52,7 @@ export interface BasemapChange {
 }
 
 export class FloorRepository {
-  constructor(private readonly database: MapPointerDatabase = db) {}
+  constructor(private readonly database: PlanarMapMarkerDatabase = db) {}
 
   list(projectId: string): Promise<Floor[]> {
     return this.database.floors

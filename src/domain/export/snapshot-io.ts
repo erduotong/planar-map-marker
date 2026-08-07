@@ -30,7 +30,7 @@ import { newId } from "@/lib/id"
  * serialize/parse boundary — it is rebuilt on import.
  */
 
-export const ARCHIVE_FORMAT = "map-pointer-project"
+export const ARCHIVE_FORMAT = "planar-map-marker-project"
 export const ARCHIVE_VERSION = 1
 export const ARCHIVE_EXTENSION = "mappkg"
 

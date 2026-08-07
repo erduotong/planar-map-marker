@@ -1,5 +1,5 @@
 import Dexie from "dexie"
-import { db, type MapPointerDatabase } from "@/db/database"
+import { db, type PlanarMapMarkerDatabase } from "@/db/database"
 import type {
   Asset,
   Constraint,
@@ -23,7 +23,7 @@ export interface UpdateProjectInput {
 }
 
 export class ProjectRepository {
-  constructor(private readonly database: MapPointerDatabase = db) {}
+  constructor(private readonly database: PlanarMapMarkerDatabase = db) {}
 
   list(): Promise<Project[]> {
     return this.database.projects.orderBy("updatedAt").reverse().toArray()

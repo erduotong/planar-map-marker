@@ -1,4 +1,4 @@
-# map-pointer
+# Planar Map Marker
 
 基于 Leaflet Simple CRS 的平面地图标点系统。在自己上传的楼层底图（png/svg）上做点位、多边形和路网标注，并导出为 GeoJSON 或可迁移的项目压缩包。
 

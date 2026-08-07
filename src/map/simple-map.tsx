@@ -60,7 +60,7 @@ export function SimpleMap({ imageUrl, size, className }: SimpleMapProps) {
     <div className={className}>
       <div
         ref={containerRef}
-        className="map-pointer-leaflet h-full w-full bg-muted/70"
+        className="planar-map-marker-leaflet h-full w-full bg-muted/70"
       />
       <div className="pointer-events-none absolute right-3 bottom-3 z-10 min-w-28 bg-background/90 px-2 py-1 text-right font-mono text-xs text-foreground shadow-sm ring-1 ring-border backdrop-blur-sm">
         {cursor ? `x ${cursor.x} · y ${cursor.y}` : "—"}

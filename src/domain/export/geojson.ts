@@ -66,7 +66,7 @@ export interface ExportFile {
   collection: GeojsonFeatureCollection
 }
 
-const CRS_NAME = "urn:ogc:def:crs:map-pointer:pixel"
+const CRS_NAME = "urn:ogc:def:crs:planar-map-marker:pixel"
 
 interface LayerInput {
   snapshot: ProjectSnapshot

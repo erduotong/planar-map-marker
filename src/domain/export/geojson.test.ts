@@ -38,7 +38,7 @@ describe("buildExportFiles", () => {
     const [file] = buildExportFiles(makeSnapshot())
     expect(file?.collection.crs).toEqual({
       type: "name",
-      properties: { name: "urn:ogc:def:crs:map-pointer:pixel" },
+      properties: { name: "urn:ogc:def:crs:planar-map-marker:pixel" },
     })
   })
 })

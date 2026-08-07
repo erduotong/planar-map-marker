@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { MapPointerDatabase } from "@/db/database"
+import { PlanarMapMarkerDatabase } from "@/db/database"
 import { ProjectRepository } from "@/db/project-repository"
 import { makeSnapshot } from "@/domain/export/fixtures"
 import { serializeSnapshot } from "@/domain/export/snapshot-io"
@@ -10,11 +10,11 @@ import {
   UpdateProjectCommand,
 } from "@/store/project-commands"
 
-let database: MapPointerDatabase
+let database: PlanarMapMarkerDatabase
 let repository: ProjectRepository
 
 beforeEach(() => {
-  database = new MapPointerDatabase(`test-${crypto.randomUUID()}`)
+  database = new PlanarMapMarkerDatabase(`test-${crypto.randomUUID()}`)
   repository = new ProjectRepository(database)
 })
 

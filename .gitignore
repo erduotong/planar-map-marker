@@ -25,3 +25,6 @@ dist-ssr
 
 # Vitest / build artifacts
 coverage
+
+# AI
+.claude

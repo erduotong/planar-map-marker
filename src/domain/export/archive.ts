@@ -61,7 +61,7 @@ function makeManifest(snapshot: ProjectSnapshot): PackageManifest {
   return {
     format: ARCHIVE_FORMAT,
     version: ARCHIVE_VERSION,
-    app: "map-pointer",
+    app: "planar-map-marker",
     exportedAt: Date.now(),
     projectId: snapshot.project.id,
     projectName: snapshot.project.name,
@@ -83,7 +83,7 @@ export async function parseProjectPackage(
   const manifestFile = zip.file("manifest.json")
   if (!manifestFile) {
     throw new ArchiveImportError(
-      "不是 map-pointer 项目包（缺少 manifest.json）；请上传导出的 .mappkg 文件",
+      "不是 Planar Map Marker 项目包（缺少 manifest.json）；请上传导出的 .mappkg 文件",
     )
   }
   const manifest = parseManifest(safeJson(await manifestFile.async("string")))
@@ -119,7 +119,7 @@ function parseManifest(raw: unknown): PackageManifest {
     throw new ArchiveImportError("manifest.json 无效")
   }
   if (raw.format !== ARCHIVE_FORMAT) {
-    throw new ArchiveImportError("不是 map-pointer 项目包（格式不符）")
+    throw new ArchiveImportError("不是 Planar Map Marker 项目包（格式不符）")
   }
   const version = raw.version
   if (typeof version !== "number" || !Number.isInteger(version)) {
@@ -133,7 +133,7 @@ function parseManifest(raw: unknown): PackageManifest {
   return {
     format: ARCHIVE_FORMAT,
     version,
-    app: typeof raw.app === "string" ? raw.app : "map-pointer",
+    app: typeof raw.app === "string" ? raw.app : "planar-map-marker",
     exportedAt:
       typeof raw.exportedAt === "number" ? raw.exportedAt : Date.now(),
     projectId: typeof raw.projectId === "string" ? raw.projectId : "",

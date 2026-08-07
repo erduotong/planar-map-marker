@@ -68,7 +68,7 @@ export function ProjectPage() {
   const hiddenUploadRef = useRef<HTMLInputElement>(null)
   const [uploadTarget, setUploadTarget] = useState<Floor | null>(null)
   const [floorWidth, setFloorWidth] = usePersistedState(
-    "map-pointer:floor-panel-width",
+    "planar-map-marker:floor-panel-width",
     256,
   )
 

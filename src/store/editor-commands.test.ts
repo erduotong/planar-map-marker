@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { MapPointerDatabase } from "@/db/database"
+import { PlanarMapMarkerDatabase } from "@/db/database"
 import { EditorRepository } from "@/db/editor-repository"
 import { FloorRepository } from "@/db/floor-repository"
 import { ProjectRepository } from "@/db/project-repository"
@@ -13,7 +13,7 @@ import {
   MoveRouteNodeCommand,
 } from "@/store/editor-commands"
 
-let database: MapPointerDatabase
+let database: PlanarMapMarkerDatabase
 let projects: ProjectRepository
 let floors: FloorRepository
 let repository: EditorRepository
@@ -21,7 +21,7 @@ let projectId: string
 let floorId: string
 
 beforeEach(async () => {
-  database = new MapPointerDatabase(`test-${crypto.randomUUID()}`)
+  database = new PlanarMapMarkerDatabase(`test-${crypto.randomUUID()}`)
   projects = new ProjectRepository(database)
   floors = new FloorRepository(database)
   repository = new EditorRepository(database)

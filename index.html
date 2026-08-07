@@ -4,14 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>map-pointer</title>
+    <title>Planar Map Marker</title>
     <script>
       // Apply the stored theme before first paint so there is no light flash on
       // load. Kept in sync with src/lib/theme.ts.
       (() => {
         var stored = null
         try {
-          stored = localStorage.getItem("map-pointer:theme")
+          stored = localStorage.getItem("planar-map-marker:theme")
         } catch {}
         var dark =
           stored === "dark" ||

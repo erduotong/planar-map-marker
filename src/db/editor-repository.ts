@@ -1,4 +1,4 @@
-import { db, type MapPointerDatabase } from "@/db/database"
+import { db, type PlanarMapMarkerDatabase } from "@/db/database"
 import {
   assertNodeEndpointsBelongToLayer,
   assertValidRouteEdge,
@@ -84,7 +84,7 @@ export interface RouteNodeMove {
 }
 
 export class EditorRepository {
-  constructor(private readonly database: MapPointerDatabase = db) {}
+  constructor(private readonly database: PlanarMapMarkerDatabase = db) {}
 
   listConstraints(projectId: string): Promise<Constraint[]> {
     return this.database.constraints

@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { MapPointerDatabase } from "@/db/database"
+import { PlanarMapMarkerDatabase } from "@/db/database"
 import { EditorRepository } from "@/db/editor-repository"
 import { FloorBasemapSizeError, FloorRepository } from "@/db/floor-repository"
 import { ProjectRepository } from "@/db/project-repository"
 
-let database: MapPointerDatabase
+let database: PlanarMapMarkerDatabase
 let projectRepository: ProjectRepository
 let repository: FloorRepository
 let projectId: string
 
 beforeEach(async () => {
-  database = new MapPointerDatabase(`test-${crypto.randomUUID()}`)
+  database = new PlanarMapMarkerDatabase(`test-${crypto.randomUUID()}`)
   projectRepository = new ProjectRepository(database)
   repository = new FloorRepository(database)
   projectId = (await projectRepository.create({ name: "大楼" })).id

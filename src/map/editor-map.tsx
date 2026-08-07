@@ -471,7 +471,7 @@ export function EditorMap({
     <div className="relative h-full w-full overflow-hidden">
       <div
         ref={containerRef}
-        className="map-pointer-leaflet h-full w-full bg-muted/70"
+        className="planar-map-marker-leaflet h-full w-full bg-muted/70"
       />
       <div className="pointer-events-none absolute right-3 bottom-3 z-10 min-w-28 bg-background/90 px-2 py-1 text-right font-mono text-xs shadow-sm ring-1 ring-border backdrop-blur-sm">
         {cursor ? `x ${cursor.x} · y ${cursor.y}` : "—"}
@@ -601,7 +601,7 @@ function directionArrow(
   const color = muted ? "#94a3b8" : "#1e40af"
   return L.marker([lat, lng], {
     icon: L.divIcon({
-      className: "map-pointer-direction-arrow",
+      className: "planar-map-marker-direction-arrow",
       html: `<div style="transform: rotate(${angle}deg); color: ${color};">➤</div>`,
       iconSize: [14, 14],
       iconAnchor: [7, 7],
