@@ -1,6 +1,7 @@
 import type { ProjectSnapshot } from "@/db/project-repository"
 import { buildEndpointContext, resolveEndpoint } from "@/domain/graph"
 import type { RouteEdge } from "@/domain/models"
+import i18n from "@/i18n"
 
 /**
  * Pre-flight checks run before an export actually starts. Errors block the
@@ -19,21 +20,23 @@ export function runPreflight(snapshot: ProjectSnapshot): PreflightResult {
   const { project, floors, layers } = snapshot
 
   if (floors.length === 0) {
-    errors.push("项目还没有楼层，没有可导出的内容")
+    errors.push(i18n.t("errors.preflight.noFloors"))
   }
 
   const layerCount = layers.length
   if (layerCount === 0) {
-    warnings.push("项目还没有图层，导出的压缩包只有底图")
+    warnings.push(i18n.t("errors.preflight.noLayers"))
   }
 
   if (!project.baseSize) {
-    warnings.push("项目尚未上传底图，坐标没有画布尺寸基准")
+    warnings.push(i18n.t("errors.preflight.noBaseline"))
   }
 
   for (const floor of floors) {
     if (!floor.basemap) {
-      warnings.push(`楼层「${floor.name}」还没有底图`)
+      warnings.push(
+        i18n.t("errors.preflight.floorNoBasemap", { name: floor.name }),
+      )
     }
   }
 
@@ -42,9 +45,15 @@ export function runPreflight(snapshot: ProjectSnapshot): PreflightResult {
   for (const edge of snapshot.routeEdges) {
     const missing = danglingEndpoint(edge, context)
     if (missing) {
-      const layerName = layerById.get(edge.layerId)?.name ?? "未知图层"
+      const layerName =
+        layerById.get(edge.layerId)?.name ??
+        i18n.t("errors.preflight.unknownLayer")
       errors.push(
-        `路线图层「${layerName}」的边 ${shortId(edge.id)} 的${missing}端点已不存在，请先修复再导出`,
+        i18n.t("errors.preflight.danglingEndpoint", {
+          layerName,
+          id: shortId(edge.id),
+          endpoint: missing,
+        }),
       )
     }
   }
@@ -55,9 +64,9 @@ export function runPreflight(snapshot: ProjectSnapshot): PreflightResult {
 function danglingEndpoint(
   edge: RouteEdge,
   context: ReturnType<typeof buildEndpointContext>,
-): "起点" | "终点" | null {
-  if (!resolveEndpoint(edge.source, context)) return "起点"
-  if (!resolveEndpoint(edge.target, context)) return "终点"
+): string | null {
+  if (!resolveEndpoint(edge.source, context)) return i18n.t("graph.start")
+  if (!resolveEndpoint(edge.target, context)) return i18n.t("graph.end")
   return null
 }
 

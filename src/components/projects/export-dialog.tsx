@@ -1,6 +1,7 @@
 import { saveAs } from "file-saver"
 import { FileDown, Package } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,6 +37,7 @@ export function ExportDialog({
   onOpenChange,
   projectId,
 }: ExportDialogProps) {
+  const { t } = useTranslation()
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null)
   const [preflight, setPreflight] = useState<PreflightResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -54,7 +56,7 @@ export function ExportDialog({
       })
       .catch((error) => {
         console.error(error)
-        if (!cancelled) toast.error("无法读取项目数据，请重试")
+        if (!cancelled) toast.error(t("export.loadFailed"))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -62,7 +64,7 @@ export function ExportDialog({
     return () => {
       cancelled = true
     }
-  }, [open, projectId])
+  }, [open, projectId, t])
 
   async function runExport(kind: ExportKind) {
     if (!snapshot) return
@@ -71,7 +73,9 @@ export function ExportDialog({
       const current = await projects.snapshot(snapshot.project.id)
       const check = runPreflight(current)
       if (check.errors.length > 0) {
-        toast.error(`无法导出：${check.errors.join("；")}`)
+        toast.error(
+          t("export.exportFailed", { details: check.errors.join("；") }),
+        )
         return
       }
       const files = buildExportFiles(current)
@@ -87,12 +91,16 @@ export function ExportDialog({
       saveAs(blob, fileName)
       await projects.markExported(current.project.id)
       toast.success(
-        kind === "geojson" ? "已导出 GeoJSON 压缩包" : "已导出项目包",
+        kind === "geojson"
+          ? t("export.toastGeojson")
+          : t("export.toastPackage"),
       )
       onOpenChange(false)
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "导出失败，请重试")
+      toast.error(
+        error instanceof Error ? error.message : t("export.exportError"),
+      )
     } finally {
       setExporting(null)
     }
@@ -104,11 +112,8 @@ export function ExportDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>导出数据</DialogTitle>
-          <DialogDescription>
-            每个楼层每个图层对应一个 GeoJSON 文件；.mappkg
-            还包含全部配置与底图，可直接分享给他人导入。
-          </DialogDescription>
+          <DialogTitle>{t("export.title")}</DialogTitle>
+          <DialogDescription>{t("export.description")}</DialogDescription>
         </DialogHeader>
 
         {loading || !preflight ? (
@@ -119,15 +124,24 @@ export function ExportDialog({
           <div className="grid gap-4">
             {snapshot && (
               <dl className="grid grid-cols-3 gap-2 text-center text-xs">
-                <Stat label="楼层" value={String(snapshot.floors.length)} />
-                <Stat label="图层" value={String(snapshot.layers.length)} />
-                <Stat label="底图" value={String(snapshot.assets.length)} />
+                <Stat
+                  label={t("export.statFloors")}
+                  value={String(snapshot.floors.length)}
+                />
+                <Stat
+                  label={t("export.statLayers")}
+                  value={String(snapshot.layers.length)}
+                />
+                <Stat
+                  label={t("export.statBasemaps")}
+                  value={String(snapshot.assets.length)}
+                />
               </dl>
             )}
 
             {preflight.errors.length > 0 && (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-                <p className="mb-1 font-medium">存在阻断问题，暂不能导出</p>
+                <p className="mb-1 font-medium">{t("export.blocked")}</p>
                 <ul className="list-disc space-y-1 pl-4">
                   {preflight.errors.map((error) => (
                     <li key={error}>{error}</li>
@@ -138,7 +152,7 @@ export function ExportDialog({
 
             {preflight.warnings.length > 0 && (
               <div className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">
-                <p className="mb-1 font-medium">提示</p>
+                <p className="mb-1 font-medium">{t("export.hints")}</p>
                 <ul className="list-disc space-y-1 pl-4">
                   {preflight.warnings.map((warning) => (
                     <li key={warning}>{warning}</li>
@@ -162,7 +176,7 @@ export function ExportDialog({
                   disabled={exporting !== null}
                 >
                   {exporting === "package" ? <Spinner /> : <Package />}
-                  .mappkg 项目包
+                  {t("export.packageLabel")}
                 </Button>
               </div>
             )}

@@ -27,6 +27,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -65,6 +66,7 @@ export function LayerSidebar({
   onDelete,
   onReorder,
 }: LayerSidebarProps) {
+  const { t } = useTranslation()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -84,12 +86,12 @@ export function LayerSidebar({
   return (
     <aside className="flex h-full w-full shrink-0 flex-col bg-background">
       <div className="flex h-12 items-center border-b px-3">
-        <span className="text-sm font-medium">图层</span>
+        <span className="text-sm font-medium">{t("layers.sidebarTitle")}</span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="新建图层"
+          aria-label={t("layers.create")}
           onClick={onCreate}
         >
           <Plus />
@@ -122,7 +124,7 @@ export function LayerSidebar({
             </DndContext>
           ) : (
             <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-              暂无图层
+              {t("layers.noLayers")}
             </div>
           )}
         </div>
@@ -155,6 +157,8 @@ function SortableLayerRow({
     isDragging,
   } = useSortable({ id: layer.id })
 
+  const { t } = useTranslation()
+
   const Icon =
     layer.kind === "point"
       ? MapPin
@@ -175,7 +179,7 @@ function SortableLayerRow({
       <button
         type="button"
         className="flex size-5 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing"
-        aria-label={`拖动 ${layer.name} 排序`}
+        aria-label={t("layers.dragSort", { name: layer.name })}
         {...attributes}
         {...listeners}
       >
@@ -206,14 +210,18 @@ function SortableLayerRow({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={layer.visible ? "隐藏图层" : "显示图层"}
+              aria-label={
+                layer.visible ? t("layers.hideLayer") : t("layers.showLayer")
+              }
               onClick={() => onToggleVisible(layer)}
             >
               {layer.visible ? <Eye /> : <EyeOff />}
             </Button>
           }
         />
-        <TooltipContent>{layer.visible ? "隐藏" : "显示"}</TooltipContent>
+        <TooltipContent>
+          {layer.visible ? t("common.hide") : t("common.show")}
+        </TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger
@@ -221,7 +229,9 @@ function SortableLayerRow({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={layer.locked ? "解除锁定" : "锁定图层"}
+              aria-label={
+                layer.locked ? t("layers.unlockLayer") : t("layers.lockLayer")
+              }
               data-locked={layer.locked ? "" : undefined}
               onClick={() => onToggleLocked(layer)}
             >
@@ -233,7 +243,9 @@ function SortableLayerRow({
             </Button>
           }
         />
-        <TooltipContent>{layer.locked ? "已锁定" : "锁定"}</TooltipContent>
+        <TooltipContent>
+          {layer.locked ? t("layers.locked") : t("layers.lock")}
+        </TooltipContent>
       </Tooltip>
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -241,7 +253,7 @@ function SortableLayerRow({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={`${layer.name} 的操作`}
+              aria-label={t("common.actionsFor", { name: layer.name })}
             >
               <MoreHorizontal />
             </Button>
@@ -249,14 +261,14 @@ function SortableLayerRow({
         />
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onToggleLocked(layer)}>
-            <Lock /> {layer.locked ? "解除锁定" : "锁定"}
+            <Lock /> {layer.locked ? t("layers.unlock") : t("layers.lock")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             onClick={() => onDelete(layer)}
           >
-            <Trash2 /> 删除
+            <Trash2 /> {t("common.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

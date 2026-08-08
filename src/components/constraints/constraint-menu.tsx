@@ -1,4 +1,5 @@
 import { Database, Pencil, Plus, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -20,18 +21,19 @@ export function ConstraintMenu({
   onEdit: (constraint: Constraint) => void
   onDelete: (constraint: Constraint) => void
 }) {
+  const { t } = useTranslation()
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
           <Button variant="outline" size="sm">
-            <Database /> 数据约束
+            <Database /> {t("constraints.menu")}
           </Button>
         }
       />
       <DropdownMenuContent align="end" className="min-w-52">
         <DropdownMenuItem onClick={onCreate}>
-          <Plus /> 新建数据约束
+          <Plus /> {t("constraints.create")}
         </DropdownMenuItem>
         {constraints.length > 0 && <DropdownMenuSeparator />}
         {constraints.map((constraint) => (
@@ -40,7 +42,7 @@ export function ConstraintMenu({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={`编辑 ${constraint.name}`}
+              aria-label={t("constraints.editAria", { name: constraint.name })}
               onClick={(event) => {
                 event.stopPropagation()
                 onEdit(constraint)
@@ -51,7 +53,9 @@ export function ConstraintMenu({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={`删除 ${constraint.name}`}
+              aria-label={t("constraints.deleteAria", {
+                name: constraint.name,
+              })}
               onClick={(event) => {
                 event.stopPropagation()
                 onDelete(constraint)

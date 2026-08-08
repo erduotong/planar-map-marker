@@ -24,6 +24,7 @@ import type {
   RouteNode,
 } from "@/domain/models"
 import { DEFAULT_LAYER_STYLE } from "@/domain/models"
+import i18n from "@/i18n"
 import { newId } from "@/lib/id"
 
 export interface CreateConstraintInput {
@@ -208,7 +209,7 @@ export class EditorRepository {
       new Set(ids).size !== current.length ||
       current.some((layer) => !ids.includes(layer.id))
     ) {
-      throw new Error("图层排序必须完整包含当前楼层的全部图层")
+      throw new Error(i18n.t("errors.db.layerReorderIncomplete"))
     }
     const byId = new Map(current.map((layer) => [layer.id, layer]))
     const now = Date.now()

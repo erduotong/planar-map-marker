@@ -5,6 +5,7 @@ import type {
   RouteEdge,
   RouteNode,
 } from "@/domain/models"
+import i18n from "@/i18n"
 
 /**
  * Route-graph semantics shared by the editor, the repository and the exporter.
@@ -102,10 +103,14 @@ export function endpointLabel(
 ): string {
   if (ref.kind === "node") {
     const node = context.nodes.get(ref.nodeId)
-    return node ? `节点 ${shortId(ref.nodeId)}` : `节点 ${ref.nodeId}`
+    return i18n.t("graph.nodeLabel", {
+      id: node ? shortId(ref.nodeId) : ref.nodeId,
+    })
   }
   const feature = context.features.get(ref.featureId)
-  return feature ? `要素 ${shortId(ref.featureId)}` : `要素 ${ref.featureId}`
+  return i18n.t("graph.featureLabel", {
+    id: feature ? shortId(ref.featureId) : ref.featureId,
+  })
 }
 
 function shortId(id: string): string {
@@ -129,13 +134,13 @@ export function assertValidRouteEdge(
   context: EndpointContext,
 ): void {
   if (sameEndpoint(source, target)) {
-    throw new RouteEdgeValidationError("边的两端不能是同一个端点")
+    throw new RouteEdgeValidationError(i18n.t("errors.graph.sameEndpoint"))
   }
   if (!resolveEndpoint(source, context)) {
-    throw new RouteEdgeValidationError("起点不存在或已失效")
+    throw new RouteEdgeValidationError(i18n.t("errors.graph.sourceMissing"))
   }
   if (!resolveEndpoint(target, context)) {
-    throw new RouteEdgeValidationError("终点不存在或已失效")
+    throw new RouteEdgeValidationError(i18n.t("errors.graph.targetMissing"))
   }
 }
 
@@ -151,12 +156,12 @@ export function assertNodeEndpointsBelongToLayer(
 ): void {
   const nodeIds = new Set(layerNodes.map((node) => node.id))
   for (const [label, ref] of [
-    ["起点", source],
-    ["终点", target],
+    [i18n.t("graph.start"), source],
+    [i18n.t("graph.end"), target],
   ] as const) {
     if (ref.kind === "node" && !nodeIds.has(ref.nodeId)) {
       throw new RouteEdgeValidationError(
-        `${label}节点不属于当前路线图层；跨楼层连边请改用点要素端点（端点选择器里可按楼层选择）`,
+        i18n.t("errors.graph.endpointNotInLayer", { label }),
       )
     }
   }

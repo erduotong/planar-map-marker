@@ -20,10 +20,11 @@ import type {
   RouteEdge,
   RouteNode,
 } from "@/domain/models"
+import i18n from "@/i18n"
 import type { Command } from "@/store/command-store"
 
 export class CreateConstraintCommand implements Command {
-  readonly label = "创建数据约束"
+  readonly label = i18n.t("commands.createConstraint")
   constructor(
     private readonly input: CreateConstraintInput,
     private readonly repository: EditorRepository = editor,
@@ -35,7 +36,7 @@ export class CreateConstraintCommand implements Command {
 }
 
 export class PutConstraintCommand implements Command {
-  readonly label = "保存数据约束"
+  readonly label = i18n.t("commands.putConstraint")
   constructor(
     private readonly record: Constraint,
     private readonly repository: EditorRepository = editor,
@@ -52,7 +53,7 @@ export class PutConstraintCommand implements Command {
 }
 
 export class DeleteConstraintCommand implements Command {
-  readonly label = "删除数据约束"
+  readonly label = i18n.t("commands.deleteConstraint")
   constructor(
     private readonly id: string,
     private readonly repository: EditorRepository = editor,
@@ -64,7 +65,7 @@ export class DeleteConstraintCommand implements Command {
 }
 
 class RestoreConstraintCommand implements Command {
-  readonly label = "恢复数据约束"
+  readonly label = i18n.t("commands.restoreConstraint")
   constructor(
     private readonly snapshot: ConstraintSnapshot,
     private readonly repository: EditorRepository,
@@ -79,7 +80,7 @@ class RestoreConstraintCommand implements Command {
 }
 
 export class CreateLayerCommand implements Command {
-  readonly label = "创建图层"
+  readonly label = i18n.t("commands.createLayer")
   constructor(
     private readonly floorId: string,
     private readonly name: string,
@@ -97,7 +98,7 @@ export class CreateLayerCommand implements Command {
 }
 
 export class PutLayerCommand implements Command {
-  readonly label = "编辑图层"
+  readonly label = i18n.t("commands.editLayer")
   constructor(
     private readonly layer: Layer,
     private readonly repository: EditorRepository = editor,
@@ -113,7 +114,7 @@ export class PutLayerCommand implements Command {
 }
 
 export class UpdateLayerCommand implements Command {
-  readonly label = "编辑图层"
+  readonly label = i18n.t("commands.editLayer")
   constructor(
     private readonly id: string,
     private readonly patch: UpdateLayerInput,
@@ -128,7 +129,7 @@ export class UpdateLayerCommand implements Command {
 }
 
 export class ReorderLayersCommand implements Command {
-  readonly label = "调整图层顺序"
+  readonly label = i18n.t("commands.reorderLayers")
   constructor(
     private readonly floorId: string,
     private readonly ids: readonly string[],
@@ -144,7 +145,7 @@ export class ReorderLayersCommand implements Command {
 }
 
 export class DeleteLayerCommand implements Command {
-  readonly label = "删除图层"
+  readonly label = i18n.t("commands.deleteLayer")
   constructor(
     private readonly id: string,
     private readonly repository: EditorRepository = editor,
@@ -158,7 +159,7 @@ export class DeleteLayerCommand implements Command {
 }
 
 class RestoreLayerCommand implements Command {
-  readonly label = "恢复图层"
+  readonly label = i18n.t("commands.restoreLayer")
   constructor(
     private readonly snapshot: LayerSnapshot,
     private readonly repository: EditorRepository,
@@ -170,7 +171,7 @@ class RestoreLayerCommand implements Command {
 }
 
 export class CreateFeatureCommand implements Command {
-  readonly label = "创建标注"
+  readonly label = i18n.t("commands.createFeature")
   constructor(
     private readonly layerId: string,
     private readonly geometry: Geometry,
@@ -188,7 +189,7 @@ export class CreateFeatureCommand implements Command {
 }
 
 export class PutFeatureCommand implements Command {
-  readonly label = "编辑标注"
+  readonly label = i18n.t("commands.editFeature")
   constructor(
     private readonly feature: Feature,
     private readonly repository: EditorRepository = editor,
@@ -204,7 +205,7 @@ export class PutFeatureCommand implements Command {
 }
 
 export class DeleteFeatureCommand implements Command {
-  readonly label = "删除标注"
+  readonly label = i18n.t("commands.deleteFeature")
   constructor(
     private readonly id: string,
     private readonly repository: EditorRepository = editor,
@@ -218,7 +219,7 @@ export class DeleteFeatureCommand implements Command {
 }
 
 class RestoreFeatureCommand implements Command {
-  readonly label = "恢复标注"
+  readonly label = i18n.t("commands.restoreFeature")
   constructor(
     private readonly result: FeatureDeleteResult,
     private readonly repository: EditorRepository,
@@ -235,7 +236,7 @@ class RestoreFeatureCommand implements Command {
 // ---------------------------------------------------------------------------
 
 export class CreateRouteNodeCommand implements Command {
-  readonly label = "创建节点"
+  readonly label = i18n.t("commands.createRouteNode")
   constructor(
     private readonly layerId: string,
     private readonly coord: { x: number; y: number },
@@ -253,7 +254,7 @@ export class CreateRouteNodeCommand implements Command {
 }
 
 export class PutRouteNodeCommand implements Command {
-  readonly label = "编辑节点"
+  readonly label = i18n.t("commands.editRouteNode")
   constructor(
     private readonly node: RouteNode,
     private readonly repository: EditorRepository = editor,
@@ -269,7 +270,7 @@ export class PutRouteNodeCommand implements Command {
 }
 
 export class DeleteRouteNodeCommand implements Command {
-  readonly label = "删除节点"
+  readonly label = i18n.t("commands.deleteRouteNode")
   constructor(
     private readonly id: string,
     private readonly repository: EditorRepository = editor,
@@ -283,7 +284,7 @@ export class DeleteRouteNodeCommand implements Command {
 }
 
 class RestoreRouteNodeCommand implements Command {
-  readonly label = "恢复节点"
+  readonly label = i18n.t("commands.restoreRouteNode")
   constructor(
     private readonly result: RouteNodeDeleteResult,
     private readonly repository: EditorRepository,
@@ -296,7 +297,7 @@ class RestoreRouteNodeCommand implements Command {
 }
 
 export class CreateRouteEdgeCommand implements Command {
-  readonly label = "创建边"
+  readonly label = i18n.t("commands.createRouteEdge")
   constructor(
     private readonly input: CreateRouteEdgeInput,
     private readonly repository: EditorRepository = editor,
@@ -308,7 +309,7 @@ export class CreateRouteEdgeCommand implements Command {
 }
 
 export class PutRouteEdgeCommand implements Command {
-  readonly label = "编辑边"
+  readonly label = i18n.t("commands.editRouteEdge")
   constructor(
     private readonly edge: RouteEdge,
     private readonly repository: EditorRepository = editor,
@@ -324,7 +325,7 @@ export class PutRouteEdgeCommand implements Command {
 }
 
 export class DeleteRouteEdgeCommand implements Command {
-  readonly label = "删除边"
+  readonly label = i18n.t("commands.deleteRouteEdge")
   constructor(
     private readonly id: string,
     private readonly repository: EditorRepository = editor,
@@ -338,7 +339,7 @@ export class DeleteRouteEdgeCommand implements Command {
 }
 
 class RestoreRouteEdgeCommand implements Command {
-  readonly label = "恢复边"
+  readonly label = i18n.t("commands.restoreRouteEdge")
   constructor(
     private readonly edge: RouteEdge,
     private readonly repository: EditorRepository,
@@ -350,7 +351,7 @@ class RestoreRouteEdgeCommand implements Command {
 }
 
 export class MoveRouteNodeCommand implements Command {
-  readonly label = "移动节点"
+  readonly label = i18n.t("commands.moveRouteNode")
   constructor(
     private readonly id: string,
     private readonly coord: { x: number; y: number },
@@ -363,7 +364,7 @@ export class MoveRouteNodeCommand implements Command {
 }
 
 class RestoreRouteNodeMoveCommand implements Command {
-  readonly label = "恢复节点位置"
+  readonly label = i18n.t("commands.restoreRouteNodeMove")
   constructor(
     private readonly move: RouteNodeMove,
     private readonly repository: EditorRepository,

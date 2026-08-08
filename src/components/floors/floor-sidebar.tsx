@@ -24,6 +24,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -57,6 +58,7 @@ export function FloorSidebar({
   onUpload,
   onReorder,
 }: FloorSidebarProps) {
+  const { t } = useTranslation()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, {
@@ -76,12 +78,12 @@ export function FloorSidebar({
   return (
     <aside className="flex h-full w-full shrink-0 flex-col border-r bg-background">
       <div className="flex h-12 shrink-0 items-center border-b px-3">
-        <span className="text-sm font-medium">楼层</span>
+        <span className="text-sm font-medium">{t("floors.sidebarTitle")}</span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="新建楼层"
+          aria-label={t("floors.create")}
           onClick={onCreate}
         >
           <Plus />
@@ -115,14 +117,14 @@ export function FloorSidebar({
           </DndContext>
         ) : (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            暂无楼层
+            {t("floors.noFloors")}
           </div>
         )}
       </ScrollArea>
       <div className="border-t p-2">
         <Button variant="outline" className="w-full" onClick={onCreate}>
           <Plus />
-          新建楼层
+          {t("floors.create")}
         </Button>
       </div>
     </aside>
@@ -146,6 +148,7 @@ function SortableFloor({
   onDelete,
   onUpload,
 }: SortableFloorProps) {
+  const { t } = useTranslation()
   const {
     attributes,
     listeners,
@@ -168,7 +171,7 @@ function SortableFloor({
       <button
         type="button"
         className="flex size-7 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing"
-        aria-label={`拖动 ${floor.name} 排序`}
+        aria-label={t("floors.dragSort", { name: floor.name })}
         {...attributes}
         {...listeners}
       >
@@ -193,7 +196,7 @@ function SortableFloor({
             <Button
               variant="ghost"
               size="icon-xs"
-              aria-label={`${floor.name} 的操作`}
+              aria-label={t("common.actionsFor", { name: floor.name })}
             >
               <MoreHorizontal />
             </Button>
@@ -202,17 +205,19 @@ function SortableFloor({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onUpload(floor)}>
             <Upload />
-            {floor.basemap ? "替换底图" : "上传底图"}
+            {floor.basemap
+              ? t("floors.replaceBasemap")
+              : t("floors.uploadBasemap")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onRename(floor)}>
-            <Pencil /> 重命名
+            <Pencil /> {t("common.rename")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             onClick={() => onDelete(floor)}
           >
-            <Trash2 /> 删除
+            <Trash2 /> {t("common.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

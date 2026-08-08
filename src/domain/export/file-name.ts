@@ -3,13 +3,17 @@
  * every path component is scrubbed before it lands in a zip; collisions get a
  * numeric suffix instead of silently overwriting each other.
  */
+import i18n from "@/i18n"
 
 /** Characters that would corrupt a zip path on any common platform. */
 const FORBIDDEN = new Set(["\\", "/", ":", "*", "?", '"', "<", ">", "|"])
 
 /** Scrubs a component so it is safe inside a zip path (no separators, dots or
  * control characters). Falls back to `fallback` when nothing survives. */
-export function sanitizeFileName(name: string, fallback = "未命名"): string {
+export function sanitizeFileName(
+  name: string,
+  fallback = i18n.t("export.unnamed"),
+): string {
   const cleaned = [...name]
     .map((ch) => (ch.charCodeAt(0) < 0x20 || FORBIDDEN.has(ch) ? " " : ch))
     .join("")

@@ -1,4 +1,5 @@
-import { useId, useState } from "react"
+import { useId, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -11,8 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-
-const floorNameSchema = z.string().trim().min(1, "请输入楼层名称").max(100)
 
 interface FloorDialogProps {
   open: boolean
@@ -33,8 +32,13 @@ export function FloorDialog({
   onOpenChange,
   onSubmit,
 }: FloorDialogProps) {
+  const { t } = useTranslation()
   const id = useId()
   const [name, setName] = useState(initialName)
+  const floorNameSchema = useMemo(
+    () => z.string().trim().min(1, t("floors.nameRequired")).max(100),
+    [t],
+  )
   const parsed = floorNameSchema.safeParse(name)
 
   return (
@@ -62,14 +66,14 @@ export function FloorDialog({
             className="py-5"
             data-invalid={!parsed.success && name.length > 0}
           >
-            <FieldLabel htmlFor={id}>名称</FieldLabel>
+            <FieldLabel htmlFor={id}>{t("common.name")}</FieldLabel>
             <Input
               id={id}
               autoFocus
               value={name}
               onChange={(event) => setName(event.target.value)}
               aria-invalid={!parsed.success && name.length > 0}
-              placeholder="例如：1F、B2、屋顶"
+              placeholder={t("floors.namePlaceholder")}
             />
             {!parsed.success && name.length > 0 && (
               <FieldError>{parsed.error.issues[0]?.message}</FieldError>
@@ -82,10 +86,10 @@ export function FloorDialog({
               disabled={pending}
               onClick={() => onOpenChange(false)}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={pending || !parsed.success}>
-              {pending ? "正在保存…" : "保存"}
+              {pending ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

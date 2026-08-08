@@ -1,5 +1,6 @@
 import { X } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -11,12 +12,6 @@ import {
 } from "@/components/ui/select"
 import { type EndpointContext, endpointLabel } from "@/domain/graph"
 import type { EdgeDirection, EndpointRef } from "@/domain/models"
-
-const DIRECTION_OPTIONS: { value: EdgeDirection; label: string }[] = [
-  { value: "both", label: "双向" },
-  { value: "forward", label: "顺向" },
-  { value: "backward", label: "逆向" },
-]
 
 interface EdgeConnectPaletteProps {
   source: EndpointRef | null
@@ -36,6 +31,12 @@ export function EdgeConnectPalette({
   onCreate,
   onCancel,
 }: EdgeConnectPaletteProps) {
+  const { t } = useTranslation()
+  const DIRECTION_OPTIONS: { value: EdgeDirection; label: string }[] = [
+    { value: "both", label: t("routes.directions.both") },
+    { value: "forward", label: t("routes.directions.forward") },
+    { value: "backward", label: t("routes.directions.backward") },
+  ]
   const [direction, setDirection] = useState<EdgeDirection>("both")
   const [passable, setPassable] = useState(true)
   const [pending, setPending] = useState(false)
@@ -53,12 +54,14 @@ export function EdgeConnectPalette({
   return (
     <div className="absolute top-16 left-1/2 z-10 w-[22rem] -translate-x-1/2 rounded-lg border bg-background p-3 shadow-lg">
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-sm font-medium">连接边</span>
+        <span className="text-sm font-medium">
+          {t("routes.connectEdgeTitle")}
+        </span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-xs"
-          aria-label="退出连边"
+          aria-label={t("routes.exitConnect")}
           onClick={onCancel}
         >
           <X />
@@ -66,25 +69,27 @@ export function EdgeConnectPalette({
       </div>
       <div className="grid gap-2 text-xs">
         <EndpointSlot
-          label="起点"
+          label={t("routes.source")}
           ref={source}
           context={context}
           onOpen={() => onPickSlot("source")}
         />
         <EndpointSlot
-          label="终点"
+          label={t("routes.target")}
           ref={target}
           context={context}
           onOpen={() => onPickSlot("target")}
         />
       </div>
       <p className="mt-2 text-xs text-muted-foreground">
-        地图上可点击本图层的节点或点要素；跨楼层端点请从列表选择点要素。
+        {t("routes.connectHint")}
       </p>
       {complete && (
         <div className="mt-3 grid gap-3 border-t pt-3">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">方向</span>
+            <span className="text-xs text-muted-foreground">
+              {t("routes.direction")}
+            </span>
             <Select
               value={direction}
               onValueChange={(value) => {
@@ -114,14 +119,14 @@ export function EdgeConnectPalette({
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Checkbox
-              aria-label="可通行"
+              aria-label={t("routes.passable")}
               checked={passable}
               onCheckedChange={(checked) => setPassable(checked === true)}
             />
-            <span>可通行</span>
+            <span>{t("routes.passable")}</span>
           </div>
           <Button onClick={create} disabled={pending}>
-            {pending ? "正在创建…" : "创建边"}
+            {pending ? t("routes.creating") : t("routes.createEdge")}
           </Button>
         </div>
       )}
@@ -140,11 +145,12 @@ function EndpointSlot({
   context: EndpointContext
   onOpen: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center gap-2 rounded-md border px-2 py-1.5">
       <span className="shrink-0 text-muted-foreground">{label}</span>
       <span className="min-w-0 flex-1 truncate">
-        {ref ? endpointLabel(ref, context) : "未选择"}
+        {ref ? endpointLabel(ref, context) : t("routes.notSelected")}
       </span>
       <Button
         variant="ghost"
@@ -152,7 +158,7 @@ function EndpointSlot({
         className="h-6 shrink-0"
         onClick={onOpen}
       >
-        选择
+        {t("common.select")}
       </Button>
     </div>
   )

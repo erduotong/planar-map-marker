@@ -1,5 +1,6 @@
 import { Save, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { ConstraintFieldInput } from "@/components/features/constraint-field-input"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -17,6 +18,7 @@ export function FeatureProperties({
   onSave: (feature: Feature) => Promise<void>
   onDelete: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [properties, setProperties] = useState(feature.properties)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const fields = constraint?.fields ?? []
@@ -47,12 +49,12 @@ export function FeatureProperties({
   return (
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-sm font-medium">标注属性</span>
+        <span className="text-sm font-medium">{t("features.properties")}</span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="删除标注"
+          aria-label={t("features.delete")}
           onClick={onDelete}
         >
           <Trash2 />
@@ -82,12 +84,12 @@ export function FeatureProperties({
             </Field>
           ))}
           <Button onClick={save}>
-            <Save /> 保存属性
+            <Save /> {t("features.saveProperties")}
           </Button>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          该图层尚未绑定数据约束。
+          {t("features.noConstraintBound")}
         </p>
       )}
     </div>

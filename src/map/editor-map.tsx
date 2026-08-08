@@ -1,5 +1,6 @@
 import L from "leaflet"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import "@geoman-io/leaflet-geoman-free"
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css"
@@ -78,6 +79,7 @@ export function EditorMap({
   onMoveRouteNode,
   onPickEndpoint,
 }: EditorMapProps) {
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const featureGroupRef = useRef<L.FeatureGroup | null>(null)
@@ -440,9 +442,7 @@ export function EditorMap({
       (node) => node.layerId !== targetLayerId && layerVisible(node.layerId),
     )
     if (hitTest(map, event, otherNodes, (node) => node.coord, size)) {
-      toast.error(
-        "该节点属于其他图层；跨楼层连边请用点要素端点（端点选择器里可按楼层选择）",
-      )
+      toast.error(t("errors.graph.endpointCrossLayer"))
       return
     }
     const visibleFeatures = current.features

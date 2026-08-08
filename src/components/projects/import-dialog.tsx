@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from "date-fns"
-import { zhCN } from "date-fns/locale"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { ParsedPackage } from "@/domain/export/archive"
+import { getDateFnsLocale } from "@/i18n/date-locale"
 
 interface ImportDialogProps {
   /** The parsed package awaiting confirmation, or null when closed. */
@@ -25,14 +26,13 @@ export function ImportDialog({
   onConfirm,
   onOpenChange,
 }: ImportDialogProps) {
+  const { t, i18n } = useTranslation()
   return (
     <Dialog open={parsed !== null} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>导入项目</DialogTitle>
-          <DialogDescription>
-            将作为新项目导入，与当前已有项目互不影响。
-          </DialogDescription>
+          <DialogTitle>{t("importDialog.title")}</DialogTitle>
+          <DialogDescription>{t("importDialog.description")}</DialogDescription>
         </DialogHeader>
         {parsed && (
           <div className="grid gap-4">
@@ -41,18 +41,31 @@ export function ImportDialog({
                 {parsed.manifest.projectName}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {formatDistanceToNow(parsed.manifest.exportedAt, {
-                  addSuffix: true,
-                  locale: zhCN,
+                {t("importDialog.exported", {
+                  time: formatDistanceToNow(parsed.manifest.exportedAt, {
+                    addSuffix: true,
+                    locale: getDateFnsLocale(i18n.language),
+                  }),
                 })}
-                导出
               </p>
             </div>
             <dl className="grid grid-cols-4 gap-2 text-center text-xs">
-              <Stat label="楼层" value={parsed.data.floors.length} />
-              <Stat label="图层" value={parsed.data.layers.length} />
-              <Stat label="约束" value={parsed.data.constraints.length} />
-              <Stat label="底图" value={parsed.data.assets.length} />
+              <Stat
+                label={t("export.statFloors")}
+                value={parsed.data.floors.length}
+              />
+              <Stat
+                label={t("export.statLayers")}
+                value={parsed.data.layers.length}
+              />
+              <Stat
+                label={t("importDialog.statConstraints")}
+                value={parsed.data.constraints.length}
+              />
+              <Stat
+                label={t("export.statBasemaps")}
+                value={parsed.data.assets.length}
+              />
             </dl>
             <div className="flex justify-end gap-2">
               <Button
@@ -60,10 +73,12 @@ export function ImportDialog({
                 onClick={() => onOpenChange(false)}
                 disabled={pending}
               >
-                取消
+                {t("common.cancel")}
               </Button>
               <Button onClick={onConfirm} disabled={pending}>
-                {pending ? "正在导入…" : "确认导入"}
+                {pending
+                  ? t("importDialog.importing")
+                  : t("importDialog.confirm")}
               </Button>
             </div>
           </div>

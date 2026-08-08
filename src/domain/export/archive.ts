@@ -11,6 +11,7 @@ import {
   serializeSnapshot,
   validateArchiveData,
 } from "@/domain/export/snapshot-io"
+import i18n from "@/i18n"
 
 /**
  * Archive packaging. Two flavours share the same GeoJSON layout:
@@ -82,20 +83,20 @@ export async function parseProjectPackage(
 
   const manifestFile = zip.file("manifest.json")
   if (!manifestFile) {
-    throw new ArchiveImportError(
-      "不是 Planar Map Marker 项目包（缺少 manifest.json）；请上传导出的 .mappkg 文件",
-    )
+    throw new ArchiveImportError(i18n.t("errors.archive.missingManifest"))
   }
   const manifest = parseManifest(safeJson(await manifestFile.async("string")))
 
   const dataFile = zip.file("project.json")
   if (!dataFile) {
-    throw new ArchiveImportError("项目包缺少 project.json，数据不完整")
+    throw new ArchiveImportError(i18n.t("errors.archive.missingProjectData"))
   }
   const rawData = safeJson(await dataFile.async("string"))
   const errors = validateArchiveData(rawData)
   if (errors.length > 0) {
-    throw new ArchiveImportError(`项目包数据不合法：${errors.join("；")}`)
+    throw new ArchiveImportError(
+      i18n.t("errors.archive.invalidData", { details: errors.join("；") }),
+    )
   }
   // validateArchiveData verified every entity and its references, so from here
   // the payload is trusted enough to treat as its typed shape.
@@ -105,7 +106,9 @@ export async function parseProjectPackage(
   for (const asset of data.assets) {
     const file = zip.file(asset.dataPath)
     if (!file) {
-      throw new ArchiveImportError(`项目包缺少底图文件：${asset.dataPath}`)
+      throw new ArchiveImportError(
+        i18n.t("errors.archive.missingAsset", { path: asset.dataPath }),
+      )
     }
     const bytes = await file.async("arraybuffer")
     assetBlobs.set(asset.dataPath, new Blob([bytes], { type: asset.mime }))
@@ -116,18 +119,21 @@ export async function parseProjectPackage(
 
 function parseManifest(raw: unknown): PackageManifest {
   if (!isRecord(raw)) {
-    throw new ArchiveImportError("manifest.json 无效")
+    throw new ArchiveImportError(i18n.t("errors.archive.invalidManifest"))
   }
   if (raw.format !== ARCHIVE_FORMAT) {
-    throw new ArchiveImportError("不是 Planar Map Marker 项目包（格式不符）")
+    throw new ArchiveImportError(i18n.t("errors.archive.wrongFormat"))
   }
   const version = raw.version
   if (typeof version !== "number" || !Number.isInteger(version)) {
-    throw new ArchiveImportError("项目包版本无效")
+    throw new ArchiveImportError(i18n.t("errors.archive.invalidVersion"))
   }
   if (version > ARCHIVE_VERSION) {
     throw new ArchiveImportError(
-      `项目包版本（v${version}）高于当前应用支持的版本（v${ARCHIVE_VERSION}），请升级应用后再导入`,
+      i18n.t("errors.archive.versionTooNew", {
+        version,
+        supported: ARCHIVE_VERSION,
+      }),
     )
   }
   return {
@@ -138,7 +144,9 @@ function parseManifest(raw: unknown): PackageManifest {
       typeof raw.exportedAt === "number" ? raw.exportedAt : Date.now(),
     projectId: typeof raw.projectId === "string" ? raw.projectId : "",
     projectName:
-      typeof raw.projectName === "string" ? raw.projectName : "未命名项目",
+      typeof raw.projectName === "string"
+        ? raw.projectName
+        : i18n.t("export.unnamedProject"),
   }
 }
 
@@ -146,7 +154,7 @@ function safeJson(source: string): unknown {
   try {
     return JSON.parse(source)
   } catch {
-    throw new ArchiveImportError("项目包内包含无法解析的 JSON 文件")
+    throw new ArchiveImportError(i18n.t("errors.archive.invalidJson"))
   }
 }
 

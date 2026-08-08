@@ -8,6 +8,7 @@ import {
   Undo2,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   ConstraintDialog,
@@ -104,6 +105,7 @@ export function EditorWorkspace({
   floorId,
   asset,
 }: EditorWorkspaceProps) {
+  const { t } = useTranslation()
   const constraints = useConstraints(projectId) ?? []
   const layers = useLayers(floorId) ?? []
   const features = useFeatures(layers.map((layer) => layer.id)) ?? []
@@ -267,7 +269,9 @@ export function EditorWorkspace({
       await dispatchCommand(projectId, command)
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "操作失败")
+      toast.error(
+        error instanceof Error ? error.message : t("common.operationFailed"),
+      )
       throw error
     } finally {
       setPending(false)
@@ -287,7 +291,7 @@ export function EditorWorkspace({
       await run(new CreateConstraintCommand({ projectId, ...draft }))
     }
     setConstraintDialog(null)
-    toast.success("数据约束已保存")
+    toast.success(t("constraints.saved"))
   }
 
   async function drawComplete(layerId: string, geometry: Geometry) {
@@ -304,24 +308,28 @@ export function EditorWorkspace({
       ),
     )
     setDrawTool(null)
-    toast.success("标注已创建")
+    toast.success(t("features.created"))
   }
 
   function chooseTool(tool: Exclude<DrawTool, null>) {
     if (!selectedLayer || selectedLayer.locked) {
-      toast.error("请先选择一个未锁定的图层")
+      toast.error(t("editor.selectUnlockedLayer"))
       return
     }
     if (tool === "route-node" || tool === "route-edge") {
       if (selectedLayer.kind !== "route") {
-        toast.error("请先选择路线图层")
+        toast.error(t("editor.selectRouteLayer"))
         return
       }
       setDrawTool((current) => (current === tool ? null : tool))
       return
     }
     if (selectedLayer.kind !== tool) {
-      toast.error(tool === "point" ? "请选择点图层" : "请选择多边形图层")
+      toast.error(
+        tool === "point"
+          ? t("editor.selectPointLayer")
+          : t("editor.selectPolygonLayer"),
+      )
       return
     }
     setDrawTool((current) => (current === tool ? null : tool))
@@ -418,7 +426,7 @@ export function EditorWorkspace({
         initialProperties(constraint),
       ),
     )
-    toast.success("节点已创建")
+    toast.success(t("routes.nodeCreated"))
   }
 
   function pickEndpoint(ref: EndpointRef | null) {
@@ -428,20 +436,20 @@ export function EditorWorkspace({
     }
     if (!pendingEdge.source) {
       if (!ref) {
-        toast.error("未吸附到端点，请点击节点或点要素，或从列表选择")
+        toast.error(t("editor.noEndpointSnapped"))
         return
       }
       setPendingEdge({ source: ref, target: null })
-      toast("起点已选择，请再选择终点")
+      toast(t("editor.sourceSelected"))
       return
     }
     if (!pendingEdge.target) {
       if (!ref) {
-        toast.error("未吸附到端点，请点击节点或点要素，或从列表选择")
+        toast.error(t("editor.noEndpointSnapped"))
         return
       }
       setPendingEdge((current) => ({ ...current, target: ref }))
-      toast.success("两端点已就绪，点击「创建边」完成")
+      toast.success(t("editor.endpointsReady"))
     }
   }
 
@@ -461,9 +469,11 @@ export function EditorWorkspace({
       )
       setPendingEdge({ source: null, target: null })
       setDrawTool(null)
-      toast.success("边已创建")
+      toast.success(t("routes.edgeCreated"))
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "创建边失败")
+      toast.error(
+        error instanceof Error ? error.message : t("routes.createEdgeFailed"),
+      )
     }
   }
 
@@ -578,44 +588,52 @@ export function EditorWorkspace({
         />
         <div className="absolute top-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 bg-background p-1 shadow-md ring-1 ring-border">
           <ToolButton
-            label="选择"
+            label={t("editor.toolSelect")}
             active={drawTool === null}
             icon={<MousePointer2 />}
             onClick={() => setDrawTool(null)}
           />
           <ToolButton
-            label="添加点"
+            label={t("editor.toolPoint")}
             active={drawTool === "point"}
             icon={<MapPin />}
             onClick={() => chooseTool("point")}
           />
           <ToolButton
-            label="绘制多边形"
+            label={t("editor.toolPolygon")}
             active={drawTool === "polygon"}
             icon={<Pentagon />}
             onClick={() => chooseTool("polygon")}
           />
           <ToolButton
-            label="放置节点"
+            label={t("editor.toolRouteNode")}
             active={drawTool === "route-node"}
             icon={<CircleDot />}
             onClick={() => chooseTool("route-node")}
           />
           <ToolButton
-            label="连接边"
+            label={t("editor.toolRouteEdge")}
             active={drawTool === "route-edge"}
             icon={<Link2 />}
             onClick={() => chooseTool("route-edge")}
           />
           <span className="mx-1 h-6 w-px bg-border" />
           <ToolButton
-            label={history.undoLabel ? `撤销：${history.undoLabel}` : "撤销"}
+            label={
+              history.undoLabel
+                ? t("editor.undoWith", { label: history.undoLabel })
+                : t("editor.undo")
+            }
             disabled={!history.canUndo || history.busy}
             icon={<Undo2 />}
             onClick={() => undoCommand(projectId)}
           />
           <ToolButton
-            label={history.redoLabel ? `重做：${history.redoLabel}` : "重做"}
+            label={
+              history.redoLabel
+                ? t("editor.redoWith", { label: history.redoLabel })
+                : t("editor.redo")
+            }
             disabled={!history.canRedo || history.busy}
             icon={<Redo2 />}
             onClick={() => redoCommand(projectId)}
@@ -629,7 +647,7 @@ export function EditorWorkspace({
             }
             onDelete={(constraint) =>
               run(new DeleteConstraintCommand(constraint.id)).then(() =>
-                toast.success("数据约束已删除"),
+                toast.success(t("constraints.deleted")),
               )
             }
           />
@@ -667,8 +685,8 @@ export function EditorWorkspace({
           className="flex min-h-0 flex-1 flex-col"
         >
           <TabsList className="mx-2 mt-2 grid shrink-0 grid-cols-2">
-            <TabsTrigger value="layers">图层</TabsTrigger>
-            <TabsTrigger value="table">数据表</TabsTrigger>
+            <TabsTrigger value="layers">{t("layers.sidebarTitle")}</TabsTrigger>
+            <TabsTrigger value="table">{t("editor.dataTable")}</TabsTrigger>
           </TabsList>
           <TabsContent value="layers" className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1">
@@ -793,7 +811,7 @@ export function EditorWorkspace({
               )
             ) : (
               <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                请先选择一个图层
+                {t("editor.selectLayer")}
               </div>
             )}
           </TabsContent>
@@ -807,7 +825,7 @@ export function EditorWorkspace({
         onSubmit={async (name: string, kind: LayerKind) => {
           await run(new CreateLayerCommand(floorId, name, kind))
           setLayerDialogOpen(false)
-          toast.success("图层已创建")
+          toast.success(t("layers.created"))
         }}
       />
       <ConstraintDialog
@@ -828,7 +846,11 @@ export function EditorWorkspace({
       />
       <EndpointPickerDialog
         open={pickerSlot !== null}
-        title={pickerSlot === "source" ? "选择起点" : "选择终点"}
+        title={
+          pickerSlot === "source"
+            ? t("editor.pickSource")
+            : t("editor.pickTarget")
+        }
         nodes={routeNodes.filter((node) => node.layerId === selectedLayer?.id)}
         features={pointFeatures}
         floors={floors}

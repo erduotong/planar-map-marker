@@ -1,5 +1,6 @@
 import { Paintbrush, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -32,6 +33,7 @@ export function LayerProperties({
   onChange: (layer: Layer) => void
   onDelete: () => void
 }) {
+  const { t } = useTranslation()
   const [draft, setDraft] = useState(layer)
   const timerRef = useRef<number | null>(null)
   const pendingRef = useRef<Layer | null>(null)
@@ -77,12 +79,12 @@ export function LayerProperties({
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
         <Paintbrush className="size-4" />
-        <span className="text-sm font-medium">图层设置</span>
+        <span className="text-sm font-medium">{t("layers.settings")}</span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="删除图层"
+          aria-label={t("layers.delete")}
           onClick={onDelete}
         >
           <Trash2 />
@@ -90,7 +92,7 @@ export function LayerProperties({
       </div>
       <div className="grid gap-4">
         <Field>
-          <FieldLabel>名称</FieldLabel>
+          <FieldLabel>{t("common.name")}</FieldLabel>
           <Input
             value={draft.name}
             onBlur={flushPending}
@@ -100,7 +102,7 @@ export function LayerProperties({
         {draft.kind === "route" ? (
           <>
             <Field>
-              <FieldLabel>节点数据约束</FieldLabel>
+              <FieldLabel>{t("layers.nodeConstraint")}</FieldLabel>
               <ConstraintSelect
                 value={draft.nodeConstraintId}
                 constraints={constraints}
@@ -108,7 +110,7 @@ export function LayerProperties({
               />
             </Field>
             <Field>
-              <FieldLabel>边数据约束</FieldLabel>
+              <FieldLabel>{t("layers.edgeConstraint")}</FieldLabel>
               <ConstraintSelect
                 value={draft.edgeConstraintId}
                 constraints={constraints}
@@ -118,7 +120,7 @@ export function LayerProperties({
           </>
         ) : (
           <Field>
-            <FieldLabel>数据约束</FieldLabel>
+            <FieldLabel>{t("layers.constraint")}</FieldLabel>
             <ConstraintSelect
               value={draft.constraintId}
               constraints={constraints}
@@ -128,7 +130,7 @@ export function LayerProperties({
         )}
         <div className="grid grid-cols-2 gap-3">
           <Field>
-            <FieldLabel>线条</FieldLabel>
+            <FieldLabel>{t("layers.stroke")}</FieldLabel>
             <Input
               type="color"
               value={draft.style.color}
@@ -142,7 +144,7 @@ export function LayerProperties({
             />
           </Field>
           <Field>
-            <FieldLabel>填充</FieldLabel>
+            <FieldLabel>{t("layers.fill")}</FieldLabel>
             <Input
               type="color"
               value={draft.style.fillColor}
@@ -157,7 +159,11 @@ export function LayerProperties({
           </Field>
         </div>
         <Field>
-          <FieldLabel>图层透明度 {Math.round(draft.opacity * 100)}%</FieldLabel>
+          <FieldLabel>
+            {t("layers.opacity", {
+              percent: Math.round(draft.opacity * 100),
+            })}
+          </FieldLabel>
           <Slider
             value={[draft.opacity * 100]}
             min={0}
@@ -184,6 +190,7 @@ function ConstraintSelect({
   constraints: Constraint[]
   onSelect: (id: string | null) => void
 }) {
+  const { t } = useTranslation()
   return (
     <Select
       value={value ?? "none"}
@@ -193,11 +200,11 @@ function ConstraintSelect({
         <SelectValue>
           {value
             ? (constraints.find((item) => item.id === value)?.name ?? value)
-            : "无约束"}
+            : t("layers.noConstraint")}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="none">无约束</SelectItem>
+        <SelectItem value="none">{t("layers.noConstraint")}</SelectItem>
         {constraints.map((constraint) => (
           <SelectItem key={constraint.id} value={constraint.id}>
             {constraint.name}

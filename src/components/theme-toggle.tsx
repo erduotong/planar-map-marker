@@ -1,4 +1,5 @@
 import { Laptop, Moon, Sun } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -10,21 +11,22 @@ import {
 import { useTheme } from "@/hooks/use-theme"
 import { isTheme, type Theme } from "@/lib/theme"
 
-const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "浅色", icon: Sun },
-  { value: "dark", label: "深色", icon: Moon },
-  { value: "system", label: "跟随系统", icon: Laptop },
-]
-
 export function ThemeToggle() {
+  const { t } = useTranslation()
   const { theme, resolved, setTheme } = useTheme()
   const Icon = resolved === "dark" ? Moon : Sun
+
+  const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
+    { value: "light", label: t("theme.light"), icon: Sun },
+    { value: "dark", label: t("theme.dark"), icon: Moon },
+    { value: "system", label: t("theme.system"), icon: Laptop },
+  ]
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label="切换主题">
+          <Button variant="ghost" size="icon" aria-label={t("theme.toggle")}>
             <Icon className="size-5" />
           </Button>
         }

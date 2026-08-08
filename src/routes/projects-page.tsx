@@ -1,5 +1,6 @@
 import { Plus, Search, Upload } from "lucide-react"
 import { useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { ImportDialog } from "@/components/projects/import-dialog"
 import { ProjectCard } from "@/components/projects/project-card"
@@ -43,6 +44,7 @@ import {
 const PROJECT_LIST_SCOPE = "projects"
 
 export function ProjectsPage() {
+  const { t, i18n } = useTranslation()
   const projects = useProjects()
   const [query, setQuery] = useState("")
   const [dialogMode, setDialogMode] = useState<"create" | "edit" | null>(null)
@@ -55,14 +57,14 @@ export function ProjectsPage() {
 
   const filtered = useMemo(() => {
     if (!projects) return undefined
-    const needle = query.trim().toLocaleLowerCase("zh-CN")
+    const needle = query.trim().toLocaleLowerCase(i18n.language)
     if (!needle) return projects
     return projects.filter((project) =>
       `${project.name}\n${project.description}`
-        .toLocaleLowerCase("zh-CN")
+        .toLocaleLowerCase(i18n.language)
         .includes(needle),
     )
-  }, [projects, query])
+  }, [projects, query, i18n.language])
 
   function openCreate() {
     setSelected(null)
@@ -82,10 +84,12 @@ export function ProjectsPage() {
         : new CreateProjectCommand(values)
       await dispatchCommand(PROJECT_LIST_SCOPE, command)
       setDialogMode(null)
-      toast.success(selected ? "项目信息已更新" : "项目已创建")
+      toast.success(
+        selected ? t("projects.toastUpdated") : t("projects.toastCreated"),
+      )
     } catch (error) {
       console.error(error)
-      toast.error("保存失败，请重试")
+      toast.error(t("common.saveFailed"))
     } finally {
       setPending(false)
     }
@@ -99,11 +103,11 @@ export function ProjectsPage() {
         PROJECT_LIST_SCOPE,
         new DeleteProjectCommand(deleteTarget.id),
       )
-      toast.success(`已删除“${deleteTarget.name}”`)
+      toast.success(t("projects.toastDeleted", { name: deleteTarget.name }))
       setDeleteTarget(null)
     } catch (error) {
       console.error(error)
-      toast.error("删除失败，请重试")
+      toast.error(t("common.deleteFailed"))
     } finally {
       setPending(false)
     }
@@ -116,7 +120,9 @@ export function ProjectsPage() {
       setImportFile(parsed)
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "无法解析项目包")
+      toast.error(
+        error instanceof Error ? error.message : t("projects.parseFailed"),
+      )
     } finally {
       if (importInputRef.current) importInputRef.current.value = ""
     }
@@ -130,11 +136,13 @@ export function ProjectsPage() {
         PROJECT_LIST_SCOPE,
         new ImportProjectCommand(importFile.data, importFile.assetBlobs),
       )
-      toast.success(`已导入项目「${importFile.manifest.projectName}」`)
+      toast.success(
+        t("projects.toastImported", { name: importFile.manifest.projectName }),
+      )
       setImportFile(null)
     } catch (error) {
       console.error(error)
-      toast.error("导入失败，请重试")
+      toast.error(t("common.importFailed"))
     } finally {
       setImportPending(false)
     }
@@ -145,9 +153,11 @@ export function ProjectsPage() {
       <div className="mx-auto w-full max-w-7xl px-5 py-6 lg:px-8">
         <div className="flex flex-wrap items-center gap-3">
           <div>
-            <h1 className="text-xl font-medium">项目</h1>
+            <h1 className="text-xl font-medium">{t("projects.title")}</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {projects ? `共 ${projects.length} 个项目` : "正在读取本地数据…"}
+              {projects
+                ? t("projects.count", { count: projects.length })
+                : t("common.loading")}
             </p>
           </div>
           <div className="ml-auto flex w-full items-center gap-2 sm:w-auto">
@@ -156,9 +166,9 @@ export function ProjectsPage() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索项目"
+                placeholder={t("projects.searchPlaceholder")}
                 className="pl-9"
-                aria-label="搜索项目"
+                aria-label={t("projects.searchPlaceholder")}
               />
             </div>
             <Button
@@ -166,11 +176,11 @@ export function ProjectsPage() {
               onClick={() => importInputRef.current?.click()}
             >
               <Upload />
-              导入项目
+              {t("projects.import")}
             </Button>
             <Button onClick={openCreate}>
               <Plus />
-              新建项目
+              {t("projects.create")}
             </Button>
           </div>
         </div>
@@ -195,15 +205,15 @@ export function ProjectsPage() {
                 <EmptyMedia variant="icon">
                   <Plus />
                 </EmptyMedia>
-                <EmptyTitle>还没有项目</EmptyTitle>
+                <EmptyTitle>{t("projects.emptyTitle")}</EmptyTitle>
                 <EmptyDescription>
-                  创建第一个项目，之后可以在其中添加楼层和标注。
+                  {t("projects.emptyDescription")}
                 </EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
                 <Button onClick={openCreate}>
                   <Plus />
-                  新建项目
+                  {t("projects.create")}
                 </Button>
               </EmptyContent>
             </Empty>
@@ -213,8 +223,10 @@ export function ProjectsPage() {
                 <EmptyMedia variant="icon">
                   <Search />
                 </EmptyMedia>
-                <EmptyTitle>没有匹配的项目</EmptyTitle>
-                <EmptyDescription>试试其他关键词。</EmptyDescription>
+                <EmptyTitle>{t("projects.noMatchTitle")}</EmptyTitle>
+                <EmptyDescription>
+                  {t("projects.noMatchDescription")}
+                </EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
@@ -244,19 +256,23 @@ export function ProjectsPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>删除“{deleteTarget?.name}”？</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("projects.deleteTitle", { name: deleteTarget?.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              该项目的全部楼层、底图、图层和标注都会从当前浏览器中删除。该操作不可撤销。
+              {t("projects.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>取消</AlertDialogCancel>
+            <AlertDialogCancel disabled={pending}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={pending}
               onClick={deleteProject}
             >
-              {pending ? "正在删除…" : "删除项目"}
+              {pending ? t("common.deleting") : t("projects.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

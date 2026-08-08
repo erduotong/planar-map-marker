@@ -5,10 +5,11 @@ import {
   type SetBasemapInput,
 } from "@/db/floor-repository"
 import type { Floor, RouteEdge } from "@/domain/models"
+import i18n from "@/i18n"
 import type { Command } from "@/store/command-store"
 
 export class CreateFloorCommand implements Command {
-  readonly label = "创建楼层"
+  readonly label = i18n.t("commands.createFloor")
 
   constructor(
     private readonly projectId: string,
@@ -26,7 +27,7 @@ export class CreateFloorCommand implements Command {
 }
 
 export class RenameFloorCommand implements Command {
-  readonly label = "重命名楼层"
+  readonly label = i18n.t("commands.renameFloor")
 
   constructor(
     private readonly floorId: string,
@@ -43,7 +44,7 @@ export class RenameFloorCommand implements Command {
 }
 
 class RestoreFloorRecordCommand implements Command {
-  readonly label = "恢复楼层信息"
+  readonly label = i18n.t("commands.restoreFloorRecord")
 
   constructor(
     private readonly record: Floor,
@@ -59,7 +60,7 @@ class RestoreFloorRecordCommand implements Command {
 }
 
 export class ReorderFloorsCommand implements Command {
-  readonly label = "调整楼层顺序"
+  readonly label = i18n.t("commands.reorderFloors")
 
   constructor(
     private readonly projectId: string,
@@ -77,7 +78,7 @@ export class ReorderFloorsCommand implements Command {
 }
 
 export class DeleteFloorCommand implements Command {
-  readonly label = "删除楼层"
+  readonly label = i18n.t("commands.deleteFloor")
 
   constructor(
     private readonly floorId: string,
@@ -95,7 +96,7 @@ export class DeleteFloorCommand implements Command {
 }
 
 class RestoreFloorCommand implements Command {
-  readonly label = "恢复楼层"
+  readonly label = i18n.t("commands.restoreFloor")
 
   constructor(
     private readonly snapshot: FloorSnapshot,
@@ -110,7 +111,7 @@ class RestoreFloorCommand implements Command {
 }
 
 export class SetBasemapCommand implements Command {
-  readonly label = "设置底图"
+  readonly label = i18n.t("commands.setBasemap")
 
   constructor(
     private readonly input: SetBasemapInput,
@@ -137,7 +138,7 @@ export class SetBasemapCommand implements Command {
 }
 
 class RemoveBasemapCommand implements Command {
-  readonly label = "移除底图"
+  readonly label = i18n.t("commands.removeBasemap")
 
   constructor(
     private readonly floorId: string,

@@ -1,5 +1,7 @@
+import type { TFunction } from "i18next"
 import { Trash2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -68,13 +70,18 @@ export function RouteTable({
   onDeleteNode,
   onDeleteEdge,
 }: RouteTableProps) {
+  const { t } = useTranslation()
   return (
     <div className="flex h-full min-h-0 flex-col">
       <Tabs defaultValue="nodes" className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-10 shrink-0 items-center border-b px-3">
           <TabsList>
-            <TabsTrigger value="nodes">节点（{nodes.length}）</TabsTrigger>
-            <TabsTrigger value="edges">边（{edges.length}）</TabsTrigger>
+            <TabsTrigger value="nodes">
+              {t("routes.nodesTab", { count: nodes.length })}
+            </TabsTrigger>
+            <TabsTrigger value="edges">
+              {t("routes.edgesTab", { count: edges.length })}
+            </TabsTrigger>
           </TabsList>
         </div>
         <div className="min-h-0 flex-1 overflow-auto">
@@ -124,6 +131,7 @@ function NodeTable({
   onUpdate: (node: RouteNode, key: string, value: unknown) => Promise<boolean>
   onDelete: (node: RouteNode) => void
 }) {
+  const { t } = useTranslation()
   const fields = constraint?.fields ?? []
   return (
     <Table>
@@ -144,7 +152,7 @@ function NodeTable({
               colSpan={fields.length + 3}
               className="py-8 text-center text-muted-foreground"
             >
-              这个图层还没有节点，用「放置节点」工具在地图上添加。
+              {t("routes.noNodes")}
             </TableCell>
           </TableRow>
         )}
@@ -179,7 +187,7 @@ function NodeTable({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label="删除节点"
+                aria-label={t("routes.deleteNode")}
                 onClick={() => onDelete(node)}
               >
                 <Trash2 />
@@ -213,16 +221,17 @@ function EdgeTable({
   onUpdate: (edge: RouteEdge, key: string, value: unknown) => Promise<boolean>
   onDelete: (edge: RouteEdge) => void
 }) {
+  const { t } = useTranslation()
   const fields = constraint?.fields ?? []
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>起点</TableHead>
-          <TableHead>终点</TableHead>
-          <TableHead className="w-20">方向</TableHead>
-          <TableHead className="w-16">可通行</TableHead>
-          <TableHead className="w-20">长度</TableHead>
+          <TableHead>{t("routes.source")}</TableHead>
+          <TableHead>{t("routes.target")}</TableHead>
+          <TableHead className="w-20">{t("routes.direction")}</TableHead>
+          <TableHead className="w-16">{t("routes.passable")}</TableHead>
+          <TableHead className="w-20">{t("routes.length")}</TableHead>
           {fields.map((field) => (
             <TableHead key={field.id}>{field.label}</TableHead>
           ))}
@@ -236,7 +245,7 @@ function EdgeTable({
               colSpan={fields.length + 6}
               className="py-8 text-center text-muted-foreground"
             >
-              这个图层还没有边，用「连接边」工具在地图上连接节点或点要素。
+              {t("routes.noEdges")}
             </TableCell>
           </TableRow>
         )}
@@ -269,7 +278,7 @@ function EdgeTable({
             </TableCell>
             <TableCell onClick={(event) => event.stopPropagation()}>
               <Checkbox
-                aria-label="可通行"
+                aria-label={t("routes.passable")}
                 checked={edge.passable}
                 onCheckedChange={(checked) =>
                   onUpdate(edge, "passable", checked === true)
@@ -295,7 +304,7 @@ function EdgeTable({
               <Button
                 variant="ghost"
                 size="icon-xs"
-                aria-label="删除边"
+                aria-label={t("routes.deleteEdge")}
                 onClick={() => onDelete(edge)}
               >
                 <Trash2 />
@@ -308,10 +317,12 @@ function EdgeTable({
   )
 }
 
-const DIRECTION_LABELS: Record<EdgeDirection, string> = {
-  both: "双向",
-  forward: "顺向",
-  backward: "逆向",
+function directionLabels(t: TFunction): Record<EdgeDirection, string> {
+  return {
+    both: t("routes.directions.both"),
+    forward: t("routes.directions.forward"),
+    backward: t("routes.directions.backward"),
+  }
 }
 
 function DirectionSelect({
@@ -321,6 +332,8 @@ function DirectionSelect({
   value: EdgeDirection
   onChange: (value: EdgeDirection) => Promise<boolean>
 }) {
+  const { t } = useTranslation()
+  const labels = directionLabels(t)
   return (
     <Select
       value={value}
@@ -331,10 +344,10 @@ function DirectionSelect({
       }}
     >
       <SelectTrigger className="h-7 w-full text-xs">
-        <SelectValue>{DIRECTION_LABELS[value]}</SelectValue>
+        <SelectValue>{labels[value]}</SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {Object.entries(DIRECTION_LABELS).map(([key, label]) => (
+        {Object.entries(labels).map(([key, label]) => (
           <SelectItem key={key} value={key}>
             {label}
           </SelectItem>

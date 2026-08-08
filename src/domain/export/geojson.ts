@@ -15,6 +15,7 @@ import type {
   RouteEdge,
   RouteNode,
 } from "@/domain/models"
+import i18n from "@/i18n"
 
 /**
  * Per-layer GeoJSON export. Every floor contributes one FeatureCollection file
@@ -125,7 +126,7 @@ function buildLayerCollection(input: LayerInput): GeojsonFeatureCollection {
     properties: {
       ...baseContext(snapshot.project, floor, layer),
       _baseSize: snapshot.project.baseSize,
-      _coordinateSystem: "像素坐标：原点左上角，x 向右，y 向下",
+      _coordinateSystem: i18n.t("export.coordinateSystem"),
     },
     features: [],
   }

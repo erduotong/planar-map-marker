@@ -7,6 +7,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 import { EditorWorkspace } from "@/components/editor/editor-workspace"
@@ -53,6 +54,7 @@ import {
 import { UpdateProjectCommand } from "@/store/project-commands"
 
 export function ProjectPage() {
+  const { t } = useTranslation()
   const { projectId } = useParams()
   const project = useProject(projectId)
   const floorList = useFloors(projectId ?? "")
@@ -89,9 +91,11 @@ export function ProjectPage() {
     return (
       <Empty className="h-full">
         <EmptyHeader>
-          <EmptyTitle>项目不存在或已被删除</EmptyTitle>
-          <Button render={<Link to="/projects">回到项目列表</Link>}>
-            <ArrowLeft /> 回到项目列表
+          <EmptyTitle>{t("projects.notFound")}</EmptyTitle>
+          <Button
+            render={<Link to="/projects">{t("projects.backToList")}</Link>}
+          >
+            <ArrowLeft /> {t("projects.backToList")}
           </Button>
         </EmptyHeader>
       </Empty>
@@ -108,7 +112,9 @@ export function ProjectPage() {
       await dispatchCommand(validProjectId, command)
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "操作失败，请重试")
+      toast.error(
+        error instanceof Error ? error.message : t("common.operationFailed"),
+      )
       throw error
     } finally {
       setPending(false)
@@ -118,16 +124,16 @@ export function ProjectPage() {
   async function updateProject(values: ProjectFormValues) {
     await run(new UpdateProjectCommand(validProjectId, values))
     setEditingProject(false)
-    toast.success("项目信息已更新")
+    toast.success(t("projects.toastUpdated"))
   }
 
   async function saveFloor(name: string) {
     if (floorDialog?.mode === "rename") {
       await run(new RenameFloorCommand(floorDialog.floor.id, name))
-      toast.success("楼层已重命名")
+      toast.success(t("floors.toastRenamed"))
     } else {
       await run(new CreateFloorCommand(validProjectId, name))
-      toast.success("楼层已创建")
+      toast.success(t("floors.toastCreated"))
     }
     setFloorDialog(null)
   }
@@ -137,7 +143,7 @@ export function ProjectPage() {
     const id = deleteTarget.id
     await run(new DeleteFloorCommand(id))
     setDeleteTarget(null)
-    toast.success("楼层已删除")
+    toast.success(t("floors.toastDeleted"))
   }
 
   async function reorderFloors(ids: string[]) {
@@ -154,7 +160,7 @@ export function ProjectPage() {
         <Button
           variant="ghost"
           size="icon-sm"
-          aria-label="返回项目列表"
+          aria-label={t("projects.backToList")}
           onClick={() => navigate("/projects")}
         >
           <ArrowLeft />
@@ -163,8 +169,11 @@ export function ProjectPage() {
           <h1 className="truncate text-sm font-medium">{project.name}</h1>
           <p className="truncate text-xs text-muted-foreground">
             {project.baseSize
-              ? `画布 ${project.baseSize.width} × ${project.baseSize.height} px`
-              : project.description || "尚未设置底图"}
+              ? t("projects.canvasSize", {
+                  width: project.baseSize.width,
+                  height: project.baseSize.height,
+                })
+              : project.description || t("projects.noBasemap")}
           </p>
         </div>
         {selectedFloor && (
@@ -188,14 +197,14 @@ export function ProjectPage() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label="导出项目"
+                aria-label={t("export.exportButton")}
                 onClick={() => setExportOpen(true)}
               >
                 <Download />
               </Button>
             }
           />
-          <TooltipContent>导出项目数据</TooltipContent>
+          <TooltipContent>{t("export.exportData")}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger
@@ -204,14 +213,14 @@ export function ProjectPage() {
                 className="ml-auto"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="编辑项目信息"
+                aria-label={t("projects.edit")}
                 onClick={() => setEditingProject(true)}
               >
                 <Pencil />
               </Button>
             }
           />
-          <TooltipContent>编辑项目信息</TooltipContent>
+          <TooltipContent>{t("projects.edit")}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -244,9 +253,9 @@ export function ProjectPage() {
             <Empty className="h-full rounded-none border-0">
               <EmptyHeader>
                 <FolderOpen className="size-8 text-muted-foreground" />
-                <EmptyTitle>这个项目还没有楼层</EmptyTitle>
+                <EmptyTitle>{t("floors.noFloorsTitle")}</EmptyTitle>
                 <Button onClick={() => setFloorDialog({ mode: "create" })}>
-                  <Plus /> 新建楼层
+                  <Plus /> {t("floors.create")}
                 </Button>
               </EmptyHeader>
             </Empty>
@@ -304,8 +313,12 @@ export function ProjectPage() {
             : "create"
         }
         open={floorDialog !== null}
-        title={floorDialog?.mode === "rename" ? "重命名楼层" : "新建楼层"}
-        description="楼层名称会作为导出目录名的一部分。"
+        title={
+          floorDialog?.mode === "rename"
+            ? t("floors.rename")
+            : t("floors.create")
+        }
+        description={t("floors.nameHint")}
         initialName={
           floorDialog?.mode === "rename" ? floorDialog.floor.name : ""
         }
@@ -323,19 +336,23 @@ export function ProjectPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>删除“{deleteTarget?.name}”？</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("floors.deleteTitle", { name: deleteTarget?.name })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              该楼层的底图、全部图层和标注都会被删除。该操作不可撤销
+              {t("floors.deleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>取消</AlertDialogCancel>
+            <AlertDialogCancel disabled={pending}>
+              {t("common.cancel")}
+            </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={pending}
               onClick={deleteFloor}
             >
-              <Trash2 /> {pending ? "正在删除…" : "删除楼层"}
+              <Trash2 /> {pending ? t("common.deleting") : t("floors.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -351,13 +368,14 @@ function SelectedBasemap({
   floor: Floor
   projectId: string
 }) {
+  const { t } = useTranslation()
   const asset = useBasemapAsset(floor.basemap?.assetId)
   if (asset === undefined) return <ProjectSkeleton />
   if (!asset) {
     return (
       <Empty className="h-full rounded-none border-0">
         <EmptyHeader>
-          <EmptyTitle>底图数据已丢失，请重新上传</EmptyTitle>
+          <EmptyTitle>{t("floors.basemapLost")}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )
@@ -387,6 +405,7 @@ function HiddenBasemapUpload({
   onDone,
   onUpload,
 }: HiddenBasemapUploadProps) {
+  const { t } = useTranslation()
   async function handleFile(file: File | undefined) {
     if (!file) return
     try {
@@ -397,7 +416,12 @@ function HiddenBasemapUpload({
           project.baseSize.height !== size.height)
       ) {
         toast.error(
-          `底图尺寸不一致：期望 ${project.baseSize.width} × ${project.baseSize.height}，实际 ${size.width} × ${size.height}`,
+          t("errors.basemap.sizeMismatch", {
+            expectedWidth: project.baseSize.width,
+            expectedHeight: project.baseSize.height,
+            actualWidth: size.width,
+            actualHeight: size.height,
+          }),
         )
         return
       }
@@ -407,11 +431,17 @@ function HiddenBasemapUpload({
         size,
         blob: file,
       })
-      toast.success(floor.basemap ? "底图已替换" : "底图已上传")
+      toast.success(
+        floor.basemap
+          ? t("floors.basemapReplaced")
+          : t("floors.basemapUploaded"),
+      )
       onDone()
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "无法读取底图")
+      toast.error(
+        error instanceof Error ? error.message : t("floors.readBasemapFailed"),
+      )
     } finally {
       if (inputRef.current) inputRef.current.value = ""
     }

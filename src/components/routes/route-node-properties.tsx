@@ -1,5 +1,6 @@
 import { Save, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { ConstraintFieldInput } from "@/components/features/constraint-field-input"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
@@ -17,6 +18,7 @@ export function RouteNodeProperties({
   onSave: (node: RouteNode) => Promise<void>
   onDelete: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [properties, setProperties] = useState(node.properties)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const fields = constraint?.fields ?? []
@@ -47,12 +49,14 @@ export function RouteNodeProperties({
   return (
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-sm font-medium">节点属性</span>
+        <span className="text-sm font-medium">
+          {t("routes.nodeProperties")}
+        </span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="删除节点"
+          aria-label={t("routes.deleteNode")}
           onClick={onDelete}
         >
           <Trash2 />
@@ -86,12 +90,12 @@ export function RouteNodeProperties({
             </Field>
           ))}
           <Button onClick={save}>
-            <Save /> 保存节点
+            <Save /> {t("routes.saveNode")}
           </Button>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          该路线图层尚未绑定节点数据约束。
+          {t("routes.noNodeConstraintBound")}
         </p>
       )}
     </div>

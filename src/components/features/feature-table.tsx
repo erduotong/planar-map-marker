@@ -1,5 +1,6 @@
 import { MapPin, Pentagon, Trash2 } from "lucide-react"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -45,26 +46,29 @@ export function FeatureTable({
   onUpdate,
   onDelete,
 }: FeatureTableProps) {
+  const { t } = useTranslation()
   const fields = constraint?.fields ?? []
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-10 shrink-0 items-center border-b px-3">
-        <span className="text-sm font-medium">{layer.name} 的数据表</span>
+        <span className="text-sm font-medium">
+          {t("features.tableTitle", { name: layer.name })}
+        </span>
         <span className="ml-auto text-xs text-muted-foreground">
-          {features.length} 项
+          {t("features.count", { count: features.length })}
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         {features.length === 0 ? (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-            该图层还没有标注，用顶部工具在地图上添加。
+            {t("features.empty")}
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-9">几何</TableHead>
+                <TableHead className="w-9">{t("features.geometry")}</TableHead>
                 {fields.map((field) => (
                   <TableHead key={field.id}>{field.label}</TableHead>
                 ))}
@@ -105,7 +109,7 @@ export function FeatureTable({
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      aria-label="删除该标注"
+                      aria-label={t("features.delete")}
                       onClick={() => onDelete(feature)}
                     >
                       <Trash2 />
@@ -122,6 +126,7 @@ export function FeatureTable({
 }
 
 function GeometryIcon({ feature }: { feature: Feature }) {
+  const { t } = useTranslation()
   if (feature.geometry.type === "Point") {
     return (
       <span className="inline-flex items-center gap-1 text-xs">
@@ -134,7 +139,7 @@ function GeometryIcon({ feature }: { feature: Feature }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs">
       <Pentagon className="size-3.5" />
-      多边形 · {vertexCount} 顶点
+      {t("features.polygonVertices", { count: vertexCount })}
     </span>
   )
 }

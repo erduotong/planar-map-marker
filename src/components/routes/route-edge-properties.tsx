@@ -1,5 +1,6 @@
 import { Save, Trash2 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { ConstraintFieldInput } from "@/components/features/constraint-field-input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -15,12 +16,6 @@ import { compileConstraint } from "@/domain/constraint-compiler"
 import { type EndpointContext, endpointLabel } from "@/domain/graph"
 import type { Constraint, EdgeDirection, RouteEdge } from "@/domain/models"
 
-const DIRECTION_OPTIONS: { value: EdgeDirection; label: string }[] = [
-  { value: "both", label: "双向" },
-  { value: "forward", label: "顺向" },
-  { value: "backward", label: "逆向" },
-]
-
 export function RouteEdgeProperties({
   edge,
   constraint,
@@ -34,6 +29,12 @@ export function RouteEdgeProperties({
   onSave: (edge: RouteEdge) => Promise<void>
   onDelete: () => Promise<void>
 }) {
+  const { t } = useTranslation()
+  const DIRECTION_OPTIONS: { value: EdgeDirection; label: string }[] = [
+    { value: "both", label: t("routes.directions.both") },
+    { value: "forward", label: t("routes.directions.forward") },
+    { value: "backward", label: t("routes.directions.backward") },
+  ]
   const [properties, setProperties] = useState(edge.properties)
   const [direction, setDirection] = useState<EdgeDirection>(edge.direction)
   const [passable, setPassable] = useState(edge.passable)
@@ -72,25 +73,37 @@ export function RouteEdgeProperties({
   return (
     <div className="border-t p-3">
       <div className="mb-3 flex items-center gap-2">
-        <span className="text-sm font-medium">边属性</span>
+        <span className="text-sm font-medium">
+          {t("routes.edgeProperties")}
+        </span>
         <Button
           className="ml-auto"
           variant="ghost"
           size="icon-sm"
-          aria-label="删除边"
+          aria-label={t("routes.deleteEdge")}
           onClick={onDelete}
         >
           <Trash2 />
         </Button>
       </div>
       <div className="mb-3 grid gap-1 text-xs text-muted-foreground">
-        <p className="truncate">起点：{endpointLabel(edge.source, context)}</p>
-        <p className="truncate">终点：{endpointLabel(edge.target, context)}</p>
-        <p className="font-mono">长度：{Math.round(edge.length)} px</p>
+        <p className="truncate">
+          {t("routes.sourceLine", {
+            value: endpointLabel(edge.source, context),
+          })}
+        </p>
+        <p className="truncate">
+          {t("routes.targetLine", {
+            value: endpointLabel(edge.target, context),
+          })}
+        </p>
+        <p className="font-mono">
+          {t("routes.lengthLine", { value: Math.round(edge.length) })}
+        </p>
       </div>
       <div className="grid gap-4">
         <Field>
-          <FieldLabel>通行方向</FieldLabel>
+          <FieldLabel>{t("routes.traversalDirection")}</FieldLabel>
           <Select
             value={direction}
             onValueChange={(value) => {
@@ -120,11 +133,11 @@ export function RouteEdgeProperties({
         </Field>
         <div className="flex items-center gap-2 text-sm">
           <Checkbox
-            aria-label="可通行"
+            aria-label={t("routes.passable")}
             checked={passable}
             onCheckedChange={(checked) => setPassable(checked === true)}
           />
-          <span>可通行</span>
+          <span>{t("routes.passable")}</span>
         </div>
         {constraint ? (
           fields.map((field) => (
@@ -150,11 +163,11 @@ export function RouteEdgeProperties({
           ))
         ) : (
           <p className="text-sm text-muted-foreground">
-            该路线图层尚未绑定边数据约束。
+            {t("routes.noEdgeConstraintBound")}
           </p>
         )}
         <Button onClick={save}>
-          <Save /> 保存边
+          <Save /> {t("routes.saveEdge")}
         </Button>
       </div>
     </div>

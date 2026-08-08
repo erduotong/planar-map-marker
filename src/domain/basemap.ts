@@ -1,4 +1,5 @@
 import type { Size } from "@/domain/models"
+import i18n from "@/i18n"
 
 const SUPPORTED_TYPES = new Set([
   "image/png",
@@ -11,7 +12,11 @@ export const BASEMAP_ACCEPT = [...SUPPORTED_TYPES].join(",")
 
 export class UnsupportedImageError extends Error {
   constructor(readonly mime: string) {
-    super(`不支持的底图格式：${mime || "未知格式"}`)
+    super(
+      i18n.t("errors.basemap.unsupportedFormat", {
+        mime: mime || i18n.t("errors.basemap.unknownFormat"),
+      }),
+    )
     this.name = "UnsupportedImageError"
   }
 }
@@ -34,11 +39,11 @@ export async function inspectImage(file: File): Promise<Size> {
 export function inspectSvg(source: string): Size {
   const document = new DOMParser().parseFromString(source, "image/svg+xml")
   if (document.querySelector("parsererror")) {
-    throw new InvalidImageError("SVG 文件无法解析")
+    throw new InvalidImageError(i18n.t("errors.basemap.svgParse"))
   }
   const svg = document.documentElement
   if (svg.localName !== "svg") {
-    throw new InvalidImageError("文件根节点不是 SVG")
+    throw new InvalidImageError(i18n.t("errors.basemap.svgRoot"))
   }
 
   const width = parseSvgLength(svg.getAttribute("width"))
@@ -66,9 +71,7 @@ export function inspectSvg(source: string): Size {
     }
   }
 
-  throw new InvalidImageError(
-    "SVG 必须同时提供 width/height，或提供有效的 viewBox",
-  )
+  throw new InvalidImageError(i18n.t("errors.basemap.svgDimensions"))
 }
 
 function parseSvgLength(value: string | null): number | null {
@@ -102,14 +105,14 @@ async function inspectBitmap(file: File): Promise<Size> {
       bitmap.close()
     }
   } catch {
-    throw new InvalidImageError("无法读取图片尺寸，文件可能已损坏")
+    throw new InvalidImageError(i18n.t("errors.basemap.readSize"))
   }
 }
 
 function integerSize(width: number, height: number): Size {
   const normalized = { width: Math.round(width), height: Math.round(height) }
   if (normalized.width <= 0 || normalized.height <= 0) {
-    throw new InvalidImageError("图片尺寸必须大于 0")
+    throw new InvalidImageError(i18n.t("errors.basemap.positiveSize"))
   }
   return normalized
 }
@@ -132,7 +135,12 @@ export class BasemapSizeMismatchError extends Error {
     readonly actual: Size,
   ) {
     super(
-      `底图尺寸不一致：期望 ${expected.width} × ${expected.height}，实际 ${actual.width} × ${actual.height}`,
+      i18n.t("errors.basemap.sizeMismatch", {
+        expectedWidth: expected.width,
+        expectedHeight: expected.height,
+        actualWidth: actual.width,
+        actualHeight: actual.height,
+      }),
     )
     this.name = "BasemapSizeMismatchError"
   }

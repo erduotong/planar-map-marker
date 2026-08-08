@@ -1,9 +1,10 @@
 import { z } from "zod"
 import type { Constraint, ConstraintField } from "@/domain/models"
+import i18n from "@/i18n"
 
 export class DuplicateConstraintKeyError extends Error {
   constructor(readonly key: string) {
-    super(`字段 key 重复：${key}`)
+    super(i18n.t("errors.constraints.duplicateKey", { key }))
     this.name = "DuplicateConstraintKeyError"
   }
 }
@@ -27,7 +28,11 @@ function compileField(field: ConstraintField): z.ZodType {
       schema = z.string()
       break
     case "number": {
-      let number = z.number({ error: `${field.label}必须是数字` })
+      let number = z.number({
+        error: i18n.t("errors.constraints.mustBeNumber", {
+          label: field.label,
+        }),
+      })
       if (field.min !== null) number = number.min(field.min)
       if (field.max !== null) number = number.max(field.max)
       schema = number
@@ -38,21 +43,37 @@ function compileField(field: ConstraintField): z.ZodType {
       break
     case "enum":
       schema = z.string().refine((value) => field.options.includes(value), {
-        message: `请选择有效的${field.label}`,
+        message: i18n.t("errors.constraints.invalidEnum", {
+          label: field.label,
+        }),
       })
       break
     case "date":
-      schema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, `${field.label}格式无效`)
+      schema = z.string().regex(
+        /^\d{4}-\d{2}-\d{2}$/,
+        i18n.t("errors.constraints.invalidFormat", {
+          label: field.label,
+        }),
+      )
       break
     case "color":
-      schema = z.string().regex(/^#[0-9a-f]{6}$/i, `${field.label}必须是颜色值`)
+      schema = z.string().regex(
+        /^#[0-9a-f]{6}$/i,
+        i18n.t("errors.constraints.invalidColor", {
+          label: field.label,
+        }),
+      )
       break
   }
 
   if (field.required) {
     return schema.refine(
       (value) => !(typeof value === "string" && value.trim() === ""),
-      { message: `${field.label}为必填项` },
+      {
+        message: i18n.t("errors.constraints.required", {
+          label: field.label,
+        }),
+      },
     )
   }
   return schema.optional().or(z.literal(""))

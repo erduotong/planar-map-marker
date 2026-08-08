@@ -1,5 +1,6 @@
 import { ImagePlus, Loader2, Upload } from "lucide-react"
 import { useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BASEMAP_ACCEPT, inspectImage } from "@/domain/basemap"
@@ -23,6 +24,7 @@ export function BasemapUpload({
   compact = false,
   onUpload,
 }: BasemapUploadProps) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
 
@@ -37,7 +39,12 @@ export function BasemapUpload({
           project.baseSize.height !== size.height)
       ) {
         toast.error(
-          `底图尺寸不一致：期望 ${project.baseSize.width} × ${project.baseSize.height}，实际 ${size.width} × ${size.height}`,
+          t("errors.basemap.sizeMismatch", {
+            expectedWidth: project.baseSize.width,
+            expectedHeight: project.baseSize.height,
+            actualWidth: size.width,
+            actualHeight: size.height,
+          }),
         )
         return
       }
@@ -47,10 +54,16 @@ export function BasemapUpload({
         size,
         blob: file,
       })
-      toast.success(floor.basemap ? "底图已替换" : "底图已上传")
+      toast.success(
+        floor.basemap
+          ? t("floors.basemapReplaced")
+          : t("floors.basemapUploaded"),
+      )
     } catch (error) {
       console.error(error)
-      toast.error(error instanceof Error ? error.message : "无法读取底图")
+      toast.error(
+        error instanceof Error ? error.message : t("floors.readBasemapFailed"),
+      )
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ""
@@ -74,7 +87,9 @@ export function BasemapUpload({
           onClick={() => inputRef.current?.click()}
         >
           {busy ? <Loader2 className="animate-spin" /> : <Upload />}
-          {floor.basemap ? "替换底图" : "上传底图"}
+          {floor.basemap
+            ? t("floors.replaceBasemap")
+            : t("floors.uploadBasemap")}
         </Button>
       ) : (
         <button
@@ -89,7 +104,9 @@ export function BasemapUpload({
             <ImagePlus className="size-8" />
           )}
           <span className="text-sm font-medium">
-            {busy ? "正在读取底图…" : `为 ${floor.name} 上传底图`}
+            {busy
+              ? t("floors.readingBasemap")
+              : t("floors.uploadFor", { name: floor.name })}
           </span>
         </button>
       )}

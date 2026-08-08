@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,6 +20,7 @@ export function ConstraintFieldInput({
   value: unknown
   onChange: (value: unknown) => void
 }) {
+  const { t } = useTranslation()
   if (field.type === "boolean") {
     return (
       <div className="flex items-center gap-2 text-sm">
@@ -27,7 +29,7 @@ export function ConstraintFieldInput({
           checked={value === true}
           onCheckedChange={(checked) => onChange(checked === true)}
         />
-        {value === true ? "是" : "否"}
+        {value === true ? t("common.yes") : t("common.no")}
       </div>
     )
   }

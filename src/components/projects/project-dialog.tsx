@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useId } from "react"
 import { useForm } from "react-hook-form"
+import { useTranslation } from "react-i18next"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
@@ -15,16 +16,10 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 
-const projectFormSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "请输入项目名称")
-    .max(100, "名称最多 100 个字符"),
-  description: z.string().trim().max(2000, "简介最多 2000 个字符"),
-})
-
-export type ProjectFormValues = z.infer<typeof projectFormSchema>
+export type ProjectFormValues = {
+  name: string
+  description: string
+}
 
 interface ProjectDialogProps {
   open: boolean
@@ -43,14 +38,24 @@ export function ProjectDialog({
   onOpenChange,
   onSubmit,
 }: ProjectDialogProps) {
+  const { t } = useTranslation()
   const nameId = useId()
   const descriptionId = useId()
+  const projectFormSchema = z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, t("projects.nameRequired"))
+      .max(100, t("projects.nameTooLong")),
+    description: z.string().trim().max(2000, t("projects.descTooLong")),
+  })
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(projectFormSchema),
     values: initialValues,
   })
 
-  const title = mode === "create" ? "创建项目" : "编辑项目"
+  const title =
+    mode === "create" ? t("projects.createTitle") : t("projects.editTitle")
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,12 +69,12 @@ export function ProjectDialog({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              项目包含自己的楼层、数据约束和全部标注。
+              {t("projects.dialogDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-5 py-5">
             <Field data-invalid={Boolean(form.formState.errors.name)}>
-              <FieldLabel htmlFor={nameId}>名称</FieldLabel>
+              <FieldLabel htmlFor={nameId}>{t("common.name")}</FieldLabel>
               <Input
                 id={nameId}
                 autoFocus
@@ -79,11 +84,13 @@ export function ProjectDialog({
               <FieldError errors={[form.formState.errors.name]} />
             </Field>
             <Field data-invalid={Boolean(form.formState.errors.description)}>
-              <FieldLabel htmlFor={descriptionId}>简介</FieldLabel>
+              <FieldLabel htmlFor={descriptionId}>
+                {t("common.description")}
+              </FieldLabel>
               <Textarea
                 id={descriptionId}
                 rows={4}
-                placeholder="可选"
+                placeholder={t("common.optional")}
                 aria-invalid={Boolean(form.formState.errors.description)}
                 {...form.register("description")}
               />
@@ -97,10 +104,14 @@ export function ProjectDialog({
               disabled={pending}
               onClick={() => onOpenChange(false)}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "正在保存…" : mode === "create" ? "创建" : "保存"}
+              {pending
+                ? t("common.saving")
+                : mode === "create"
+                  ? t("common.create")
+                  : t("common.save")}
             </Button>
           </DialogFooter>
         </form>

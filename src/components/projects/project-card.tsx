@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns"
-import { zhCN } from "date-fns/locale"
 import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Project } from "@/domain/models"
+import { getDateFnsLocale } from "@/i18n/date-locale"
 
 interface ProjectCardProps {
   project: Project
@@ -20,6 +21,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
+  const { t, i18n } = useTranslation()
   return (
     <article className="group flex min-h-44 flex-col border bg-card p-5 text-card-foreground shadow-xs transition-shadow hover:shadow-sm">
       <div className="flex items-start gap-3">
@@ -29,7 +31,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
         >
           <h2 className="truncate text-base font-medium">{project.name}</h2>
           <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-            {project.description || "暂无简介"}
+            {project.description || t("projects.noDescription")}
           </p>
         </Link>
         <DropdownMenu>
@@ -38,7 +40,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`${project.name} 的操作`}
+                aria-label={t("common.actionsFor", { name: project.name })}
               >
                 <MoreHorizontal />
               </Button>
@@ -47,7 +49,7 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => onEdit(project)}>
               <Pencil />
-              编辑
+              {t("common.edit")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -55,26 +57,27 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
               onClick={() => onDelete(project)}
             >
               <Trash2 />
-              删除
+              {t("common.delete")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
       <div className="mt-auto flex items-end justify-between gap-3 pt-5">
         <span className="text-xs text-muted-foreground">
-          {formatDistanceToNow(project.updatedAt, {
-            addSuffix: true,
-            locale: zhCN,
+          {t("projects.updated", {
+            time: formatDistanceToNow(project.updatedAt, {
+              addSuffix: true,
+              locale: getDateFnsLocale(i18n.language),
+            }),
           })}
-          更新
         </span>
         {project.lastExportedAt ? (
           <Badge variant="secondary">
-            <Archive /> 已备份
+            <Archive /> {t("projects.backedUp")}
           </Badge>
         ) : (
           <Badge variant="outline" className="text-muted-foreground">
-            未备份
+            {t("projects.notBackedUp")}
           </Badge>
         )}
       </div>

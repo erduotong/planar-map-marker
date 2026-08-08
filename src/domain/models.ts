@@ -1,4 +1,5 @@
 import { z } from "zod"
+import i18n from "@/i18n"
 
 /**
  * Every persisted entity in the app, expressed as Zod schemas with the
@@ -75,10 +76,12 @@ export const constraintFieldKeySchema = z
   .min(1)
   .max(64)
   .refine((key) => !key.startsWith(RESERVED_KEY_PREFIX), {
-    message: `字段 key 不能以 "${RESERVED_KEY_PREFIX}" 开头，该前缀由导出器保留`,
+    message: i18n.t("errors.constraints.reservedKey", {
+      prefix: RESERVED_KEY_PREFIX,
+    }),
   })
   .refine((key) => !/\s/.test(key), {
-    message: "字段 key 不能包含空白字符",
+    message: i18n.t("errors.constraints.blankKey"),
   })
 
 export const constraintFieldSchema = z.object({

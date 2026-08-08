@@ -10,10 +10,11 @@ import {
   rebuildSnapshot,
 } from "@/domain/export/snapshot-io"
 import type { Project } from "@/domain/models"
+import i18n from "@/i18n"
 import type { Command } from "@/store/command-store"
 
 export class CreateProjectCommand implements Command {
-  readonly label = "创建项目"
+  readonly label = i18n.t("commands.createProject")
 
   constructor(
     private readonly input: CreateProjectInput,
@@ -27,7 +28,7 @@ export class CreateProjectCommand implements Command {
 }
 
 export class UpdateProjectCommand implements Command {
-  readonly label = "编辑项目信息"
+  readonly label = i18n.t("commands.editProject")
 
   constructor(
     private readonly projectId: string,
@@ -44,7 +45,7 @@ export class UpdateProjectCommand implements Command {
 }
 
 class RestoreProjectRecordCommand implements Command {
-  readonly label = "恢复项目信息"
+  readonly label = i18n.t("commands.restoreProjectRecord")
 
   constructor(
     private readonly record: Project,
@@ -60,7 +61,7 @@ class RestoreProjectRecordCommand implements Command {
 }
 
 export class DeleteProjectCommand implements Command {
-  readonly label = "删除项目"
+  readonly label = i18n.t("commands.deleteProject")
 
   constructor(
     private readonly projectId: string,
@@ -80,7 +81,7 @@ export class DeleteProjectCommand implements Command {
  * everything in one transaction. Undo deletes the imported project.
  */
 export class ImportProjectCommand implements Command {
-  readonly label = "导入项目"
+  readonly label = i18n.t("commands.importProject")
 
   constructor(
     private readonly data: ArchiveProjectData,
@@ -96,7 +97,7 @@ export class ImportProjectCommand implements Command {
 }
 
 class RestoreProjectCommand implements Command {
-  readonly label = "恢复项目"
+  readonly label = i18n.t("commands.restoreProject")
 
   constructor(
     private readonly snapshot: ProjectSnapshot,

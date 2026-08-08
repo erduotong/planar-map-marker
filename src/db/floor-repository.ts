@@ -11,6 +11,7 @@ import type {
   RouteNode,
   Size,
 } from "@/domain/models"
+import i18n from "@/i18n"
 import { newId } from "@/lib/id"
 
 export interface CreateFloorInput {
@@ -104,7 +105,7 @@ export class FloorRepository {
       new Set(orderedIds).size !== current.length ||
       current.some((floor) => !orderedIds.includes(floor.id))
     ) {
-      throw new Error("楼层排序必须完整包含项目的全部楼层")
+      throw new Error(i18n.t("errors.db.floorReorderIncomplete"))
     }
     const now = Date.now()
     await this.database.transaction(
@@ -360,7 +361,12 @@ export class FloorBasemapSizeError extends Error {
     readonly actual: Size,
   ) {
     super(
-      `底图尺寸不一致：期望 ${expected.width} × ${expected.height}，实际 ${actual.width} × ${actual.height}`,
+      i18n.t("errors.basemap.sizeMismatch", {
+        expectedWidth: expected.width,
+        expectedHeight: expected.height,
+        actualWidth: actual.width,
+        actualHeight: actual.height,
+      }),
     )
     this.name = "FloorBasemapSizeError"
   }

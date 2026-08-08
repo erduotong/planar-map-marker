@@ -40,7 +40,9 @@ describe("package round-trip", () => {
   let repository: ProjectRepository
 
   beforeEach(() => {
-    database = new PlanarMapMarkerDatabase(`archive-test-${crypto.randomUUID()}`)
+    database = new PlanarMapMarkerDatabase(
+      `archive-test-${crypto.randomUUID()}`,
+    )
     repository = new ProjectRepository(database)
   })
 

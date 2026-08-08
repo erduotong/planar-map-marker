@@ -1,4 +1,6 @@
+import type { TFunction } from "i18next"
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -39,6 +41,7 @@ export function EndpointPickerDialog({
   onPick,
   onOpenChange,
 }: EndpointPickerDialogProps) {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<"nodes" | "features">(
     nodes.length ? "nodes" : "features",
   )
@@ -57,7 +60,7 @@ export function EndpointPickerDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            节点只能是当前图层的；跨楼层连边请在「点要素」中选择目标楼层的点。
+            {t("routes.endpointPickerDescription")}
           </DialogDescription>
         </DialogHeader>
         <div className="flex gap-1">
@@ -66,14 +69,14 @@ export function EndpointPickerDialog({
             size="sm"
             onClick={() => setTab("nodes")}
           >
-            节点（{nodes.length}）
+            {t("routes.nodesTab", { count: nodes.length })}
           </Button>
           <Button
             variant={tab === "features" ? "secondary" : "ghost"}
             size="sm"
             onClick={() => setTab("features")}
           >
-            点要素（{features.length}）
+            {t("routes.featuresTab", { count: features.length })}
           </Button>
         </div>
         <ScrollArea className="max-h-80 min-h-40">
@@ -87,13 +90,16 @@ export function EndpointPickerDialog({
                     className="justify-start font-mono text-xs"
                     onClick={() => pick({ kind: "node", nodeId: node.id })}
                   >
-                    节点 {node.id.slice(0, 8)} · x {Math.round(node.coord.x)} y{" "}
-                    {Math.round(node.coord.y)}
+                    {t("routes.pickNode", {
+                      id: node.id.slice(0, 8),
+                      x: Math.round(node.coord.x),
+                      y: Math.round(node.coord.y),
+                    })}
                   </Button>
                 ))}
               </div>
             ) : (
-              <EmptyHint text="这个路线图层还没有节点，请先在图层上放置节点。" />
+              <EmptyHint text={t("routes.noNodesHint")} />
             )
           ) : features.length ? (
             <div className="grid gap-3 p-1">
@@ -102,7 +108,7 @@ export function EndpointPickerDialog({
                 return (
                   <div key={floorId}>
                     <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">
-                      {floor?.name ?? "未知楼层"}
+                      {floor?.name ?? t("routes.unknownFloor")}
                     </p>
                     <div className="grid gap-1">
                       {items.map((feature) => {
@@ -122,10 +128,10 @@ export function EndpointPickerDialog({
                             }
                           >
                             <span className="truncate">
-                              {featureLabel(feature)}
+                              {featureLabel(feature, t)}
                             </span>
                             <span className="ml-auto shrink-0 text-muted-foreground">
-                              {layer?.name ?? "未知图层"}
+                              {layer?.name ?? t("routes.unknownLayer")}
                             </span>
                           </Button>
                         )
@@ -136,7 +142,7 @@ export function EndpointPickerDialog({
               })}
             </div>
           ) : (
-            <EmptyHint text="项目里还没有点要素。" />
+            <EmptyHint text={t("routes.noPointFeatures")} />
           )}
         </ScrollArea>
       </DialogContent>
@@ -152,11 +158,11 @@ function EmptyHint({ text }: { text: string }) {
   )
 }
 
-function featureLabel(feature: Feature): string {
+function featureLabel(feature: Feature, t: TFunction): string {
   for (const value of Object.values(feature.properties)) {
     if (typeof value === "string" && value.trim()) return value.trim()
   }
-  return `点 ${feature.id.slice(0, 8)}`
+  return t("routes.pointLabel", { id: feature.id.slice(0, 8) })
 }
 
 function groupFeaturesByFloor(
