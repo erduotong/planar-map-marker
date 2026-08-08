@@ -25,7 +25,7 @@ export function ThemeToggle() {
       <DropdownMenuTrigger
         render={
           <Button variant="ghost" size="icon" aria-label="切换主题">
-            <Icon />
+            <Icon className="size-5" />
           </Button>
         }
       />
