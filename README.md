@@ -1,5 +1,8 @@
 # Planar Map Marker
 [简体中文](#简体中文) | [English](#english)
+
+![Preview](./assets/preview.png)
+
 ## 简体中文
 
 > 这是一个自用的纯Vibe Coding项目，代码我没有仔细审阅过，介意的话请勿使用~
