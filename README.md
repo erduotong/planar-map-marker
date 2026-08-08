@@ -1,65 +1,94 @@
 # Planar Map Marker
-> 文档还在写~ 预计在2026/08/08完成
+[简体中文](#简体中文) | [English](#english)
+## 简体中文
 
-基于 Leaflet Simple CRS 的平面地图标点系统。在自己上传的楼层底图（png/svg）上做点位、多边形和路网标注，并导出为 GeoJSON 或可迁移的项目压缩包。
+> 这是一个自用的纯Vibe Coding项目，代码我没有仔细审阅过，介意的话请勿使用~
 
-纯前端应用，零后端——所有数据存在浏览器 IndexedDB 里。
+这是一个基于 Leaflet Simple CRS 的，纯前端的**平面地图标点系统**。  
+您可以自己上传楼层底图 (PNG、JPEG、WebP、SVG )，并且在上面做标注，导出为GeoJSON。      
+您可以用它来给画好的室内地图提供室内导航所需的数据，标记POI兴趣点，圈定区域范围...   
 
-## 开发
+我们旨在让项目保持简单，易于上手，减少漫长的准备工作和学习成本~  
+点击这里立即体验: [planar-map-marker.erduotong.com](https://planar-map-marker.erduotong.com/)  
 
-```bash
-pnpm install
-pnpm dev          # 开发服务器
-pnpm build        # 生产构建（先 tsc -b 再 vite build）
-pnpm preview      # 预览构建产物
-```
+如果你喜欢这个项目的话，可以给个star⭐吗 ( 
+### 特性
 
-## 质量检查
+- 多个楼层，每个楼层支持多个图层
+- 点 / 多边形 / 路网规划三种标注类型
+- 路网支持跨楼层连接
+- 给图层创建类似QGIS的数据约束，可以在表格内编辑当前图层的所有数据（支持7种字段类型：文本 / 数字 / 开关 / 枚举 / 日期 / 颜色)
+- 纯前端应用，数据保存在IndexedDB内
+- 导出为GeoJSON，每个图层一个文件
+- 导出一个项目的所有配置并且在新的浏览器内导入，便于迁移
+- 支持100步撤销/重做（Ctrl+Z / Ctrl+Shift+Z）
+- 多语言支持（目前支持中文和英文）
 
-```bash
-pnpm lint         # Biome 检查（lint + 格式）
-pnpm lint:fix     # Biome 自动修复
-pnpm typecheck    # tsc 类型检查
-pnpm test         # Vitest 跑一遍
-pnpm test:watch   # Vitest watch 模式
-```
+### 快速上手
 
-跑单个测试文件：
+1. **访问应用** 打开[planar-map-marker.erduotong.com](https://planar-map-marker.erduotong.com/)
+2. **创建一个新项目**
+3. **创建一个楼层，并上传一张底图（要求后续上传的底图分辨率一致）**
+4. **建立图层和数据表**
+   - 创建不同的图层（例如：洗手间、建筑、商铺......）
+   - （可选）在 `数据约束`菜单中创建一个数据约束，为图层选择数据约束
+5. **开始标注**
+   - 使用菜单栏中的 点/多边形/放置节点和边 工具在地图上绘制
+   - 单击标注物，在侧边栏填写具体属性
+   - Tips: **路线图层**连边时候的节点可以选择当前图层内的节点，也可以选择其他**任何**一个**点图层**内的点（**可以跨楼层**）
+6. **导入和导出**
+   - 在顶部菜单栏导出当前项目为GeoJSON压缩包，可以在业务系统里使用
+   - 也可以导出为 `.mappkg` 项目包，其中打包了关于当前项目的所有配置信息。此时您可在其他任何一台电脑上导入项目，完全复现导出时候的状态。
 
-```bash
-pnpm vitest run src/lib/theme.test.ts
-pnpm vitest run -t "resolveTheme"     # 按测试名过滤
-```
+### 数据存储提示
+本项目没有后端，**所有内容均存储在浏览器的IndexedDB中**
 
-## 技术栈
+因此，请不要使用无痕模式或清除浏览器缓存，这有概率让您的数据丢失。  
+建议在每天使用导出功能进行备份。
 
-| 领域 | 选型 |
-|---|---|
-| 构建 | Vite 8 + React 19 + TypeScript 6（strict + noUncheckedIndexedAccess） |
-| UI | shadcn/ui（base-nova style，基于 base-ui）+ Tailwind CSS 4 |
-| 地图 | Leaflet 1.9（`L.CRS.Simple`）+ geoman-free 负责点/多边形绘制 |
-| 存储 | Dexie（IndexedDB） |
-| 状态 | Zustand + Immer，变更走命令层以统一持久化与撤销/重做 |
-| 校验 | Zod，用户定义的 Schema 在运行时编译成 Zod object |
-| 表单 | react-hook-form + `@hookform/resolvers` |
-| 导出 | JSZip + file-saver |
-| 质量 | Biome（lint + format 一体）、Vitest |
+## English
 
-## 架构约定
+> This is a pure Vibe Coding project for personal use. I haven't reviewed the code thoroughly, so please use it at your own discretion~
 
-**像素坐标是唯一真源。** 所有持久化与导出数据一律用图片像素坐标（原点左上，x 向右，y 向下）。只有渲染和交互时才转换成 Leaflet 的 `LatLng`，转换集中在 `src/lib/`（见 `coords`）。
+This is a pure front-end **Planar Map Marking System** based on Leaflet Simple CRS.  
+You can upload your own floor plans (PNG, JPEG, WebP, SVG), draw markers on them, and export the data as GeoJSON.    
+You can use it to provide indoor navigation data for your drawn indoor maps, mark POIs (Points of Interest), delineate areas, and more...  
 
-**`src/domain/` 保持纯净。** 领域层不 import React、不 import Leaflet、不碰 DOM，只有 Zod 模型和纯函数。Leaflet 的副作用集中在 `src/map/`。
+We aim to keep the project simple and easy to get started, reducing tedious preparation and learning costs.   
+Click here to experience it now: [planar-map-marker.erduotong.com](https://planar-map-marker.erduotong.com/)  
 
-**保留键以 `_` 前缀。** 导出时系统注入的属性（`_kind` / `_id` / `_source` / `_target` 等）统一加下划线；Schema 编辑器禁止用户创建 `_` 开头的字段 key。
+If you find this useful, I'd really appreciate a star⭐!
 
-**`src/components/ui/` 是 shadcn CLI 生成的，Biome 不对其做 lint**（只做格式化），因为 CLI 会重新生成这些文件。目前对生成结果有两处手工改动：`sonner.tsx` 改用本项目的 `useTheme`（而非 next-themes），`scroll-area.tsx` 删掉了未使用的 React import。
+### Features
 
-## 添加 shadcn 组件
+- Multiple floors, with support for multiple layers per floor.  
+- Three annotation types: Point / Polygon / Route network planning.  
+- Route networks support cross-floor connections.  
+- Create QGIS-like data constraints for layers, and edit all data of the current layer within a table (Supports 7 field types: Text / Number / Switch / Enum / Date / Color).
+- Pure front-end application, data is stored in IndexedDB.
+- Export as GeoJSON, one file per layer.
+- Export all configurations of a project and import them into a new browser for easy migration.
+- Supports 100 steps of Undo/Redo (Ctrl+Z / Ctrl+Shift+Z).
+- Multi-language support (Chinese and English currently)
 
-```bash
-pnpm dlx shadcn@latest add <component>
-pnpm lint:fix     # 生成的文件按本项目风格重新格式化
-```
+### Get Started
 
-预设为 `b6F9Pikvg`（已写入 `components.json`）。
+1. **Access the App:** Open [planar-map-marker.erduotong.com](https://planar-map-marker.erduotong.com/)
+2. **Create a new project.**
+3. **Create a floor** and upload a base map (Note: Subsequently uploaded base maps must maintain the same resolution).
+4. **Set up layers and data tables:**
+    - Create different layers (e.g., Restrooms, Buildings, Shops...).
+    - (Optional) Create a data constraint in the `Data Constraints` menu and apply it to a layer.
+5. **Start marking:**
+    - Use the Point / Polygon / Place Node & Edge tools in the menu bar to draw on the map.
+    - Click on a marker and fill in its specific properties in the sidebar.
+    - *Tips:* When connecting edges in a **Route Layer**, you can select nodes within the current layer, or points from **ANY** other **Point Layer** (**Cross-floor is supported**).
+6. **Import and Export:**
+    - Export the current project as a GeoJSON zip file from the top menu bar, which can be directly used in your business systems.
+    - You can also export it as a `.mappkg` project package, which bundles all configuration info of the current project. You can then import this package on any other computer to completely restore the exact state at the time of export.
+
+### Tips for Data Storage
+This project has no backend. **All content is stored in the browser's IndexedDB.**
+
+Therefore, please do not use Incognito/Private mode or clear your browser cache, as this may cause your data to be lost.  
+It is highly recommended to use the export function to back up your data daily.
