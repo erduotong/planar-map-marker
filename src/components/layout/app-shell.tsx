@@ -7,7 +7,7 @@ export function AppShell() {
     <div className="flex h-svh flex-col">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
         <Link to="/projects" className="flex items-center gap-2 font-medium">
-          <img src="/favicon.svg" alt="" className="size-5" />
+          <img src="/icon.png" alt="ICON" className="size-6" />
           Planar Map Marker
         </Link>
         <div className="ml-auto flex items-center gap-1">
