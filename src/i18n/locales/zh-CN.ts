@@ -402,6 +402,11 @@ const zhCN = {
     toastPackage: "已导出项目包",
     exportError: "导出失败，请重试",
   },
+  storageWarning: {
+    badge: "数据有丢失风险",
+    tooltip:
+      "浏览器可能在存储空间不足时自动清理本站数据，请定期导出项目包备份以防丢失。",
+  },
 }
 
 export default zhCN

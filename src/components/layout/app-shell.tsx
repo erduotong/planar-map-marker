@@ -1,5 +1,6 @@
 import { Link, Outlet } from "react-router"
 import { LanguageToggle } from "@/components/language-toggle"
+import { StorageWarning } from "@/components/layout/storage-warning"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export function AppShell() {
@@ -10,6 +11,7 @@ export function AppShell() {
           <img src="/icon.png" alt="ICON" className="size-6" />
           Planar Map Marker
         </Link>
+        <StorageWarning />
         <div className="ml-auto flex items-center gap-1">
           <a
             href="https://github.com/erduotong/planar-map-marker"

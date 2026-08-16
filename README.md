@@ -46,8 +46,9 @@
 ### 数据存储提示
 本项目没有后端，**所有内容均存储在浏览器的IndexedDB中**
 
-因此，请不要使用无痕模式或清除浏览器缓存，这有概率让您的数据丢失。  
-建议在每天使用导出功能进行备份。
+请不要使用无痕模式或清除浏览器缓存，这有概率让您的数据丢失。    
+程序已尽力向浏览器申请不要删除您的数据，但可能会被浏览器拒绝。  
+因此，建议**每天都使用导出功能进行备份**。
 
 ## English
 
@@ -93,5 +94,6 @@ If you find this useful, I'd really appreciate a star⭐!
 ### Tips for Data Storage
 This project has no backend. **All content is stored in the browser's IndexedDB.**
 
-Therefore, please do not use Incognito/Private mode or clear your browser cache, as this may cause your data to be lost.  
-It is highly recommended to use the export function to back up your data daily.
+Please do not use Incognito/Private mode or clear your browser cache, as this may cause your data to be lost.
+The program attempts to prevent data deletion, but this request may still be denied by the browser.
+Therefore, it is highly recommended to **use the export function to back up your data daily**.

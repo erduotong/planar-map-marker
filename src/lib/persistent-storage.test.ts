@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { requestPersistentStorage } from "@/lib/persistent-storage"
+import {
+  hasEvictionRisk,
+  requestPersistentStorage,
+} from "@/lib/persistent-storage"
 
-function stubNavigatorStorage(storage?: { persist: () => Promise<boolean> }) {
+function stubNavigatorStorage(storage?: {
+  persist?: () => Promise<boolean>
+  persisted?: () => Promise<boolean>
+}) {
   vi.stubGlobal("navigator", { storage })
 }
 
@@ -31,5 +37,45 @@ describe("requestPersistentStorage", () => {
     expect(() => requestPersistentStorage()).not.toThrow()
     // Give the rejected promise a tick to surface as unhandled.
     await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+})
+
+describe("hasEvictionRisk", () => {
+  it("returns true when storage is not persisted", async () => {
+    stubNavigatorStorage({
+      persisted: vi.fn().mockResolvedValue(false),
+    })
+
+    await expect(hasEvictionRisk()).resolves.toBe(true)
+  })
+
+  it("returns false when storage is persisted", async () => {
+    stubNavigatorStorage({
+      persisted: vi.fn().mockResolvedValue(true),
+    })
+
+    await expect(hasEvictionRisk()).resolves.toBe(false)
+  })
+
+  it("returns false when navigator.storage is unavailable", async () => {
+    stubNavigatorStorage(undefined)
+
+    await expect(hasEvictionRisk()).resolves.toBe(false)
+  })
+
+  it("waits for the startup persist() request before querying", async () => {
+    let resolvePersist!: (granted: boolean) => void
+    const persistDeferred = new Promise<boolean>(
+      (resolve) => (resolvePersist = resolve),
+    )
+    const persisted = vi.fn().mockResolvedValue(false)
+    stubNavigatorStorage({ persist: () => persistDeferred, persisted })
+
+    requestPersistentStorage()
+    const risk = hasEvictionRisk()
+    resolvePersist(false)
+
+    await expect(risk).resolves.toBe(true)
+    expect(persisted).toHaveBeenCalled()
   })
 })

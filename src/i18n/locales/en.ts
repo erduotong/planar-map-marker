@@ -423,6 +423,11 @@ const en = {
     toastPackage: "Project package exported",
     exportError: "Export failed, please try again",
   },
+  storageWarning: {
+    badge: "Data at risk",
+    tooltip:
+      "The browser may clear this site's data when disk space runs low. Export project packages regularly to avoid losing data.",
+  },
 }
 
 export default en
